@@ -59,7 +59,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCollectionStore } from "@/store/collectionStore";
-import { CollectionData } from "@/types/flashsale.types";
+import { CollectionData } from "@/types/collection.types";
 
 import CollectionFormModal from "./CollectionFormModal";
 
@@ -114,30 +114,6 @@ export default function CollectionManagement() {
       enableHiding: false,
     },
     {
-      accessorKey: "image",
-      header: "Image",
-      cell: ({ row }) => {
-        const imageUrl = row.getValue("image") as string;
-
-        return (
-          <div className="relative size-12 rounded-md overflow-hidden">
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={row.getValue("title")}
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs">
-                No Image
-              </div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
       accessorKey: "title",
       header: ({ column }) => {
         return (
@@ -145,25 +121,32 @@ export default function CollectionManagement() {
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Collection Name
+            Collection
             <ArrowUpDown className="ml-2 size-4" />
           </Button>
         );
       },
-      cell: ({ row }) => (
-        <div className="font-medium">{row.original.title}</div>
-      ),
-    },
-    {
-      accessorKey: "slug",
-      header: "Slug",
-      cell: ({ row }) => <div>{row.getValue("slug")}</div>,
+      cell: ({ row }) => {
+        const imageUrl = row.original.image as string;
+        const title = row.original.title;
+        console.log(" CollectionManagement ~ title:", title);
+
+        return (
+          <div className="flex flex-col gap-2">
+            <div className="relative aspect-[21/9] w-[150px] rounded-md overflow-hidden">
+              <Image src={imageUrl} alt={title} fill className="object-cover" />
+            </div>
+            <div className="font-medium">{title}</div>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "productIds",
       header: "Products",
       cell: ({ row }) => {
         const productIds = (row.getValue("productIds") as string[]) || [];
+
         return <div>{productIds.length} products</div>;
       },
     },

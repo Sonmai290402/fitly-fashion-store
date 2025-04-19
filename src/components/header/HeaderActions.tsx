@@ -1,4 +1,5 @@
 import { LogOut, User } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { useMediaQuery } from "usehooks-ts";
@@ -51,7 +52,13 @@ const HeaderActions = () => {
             <Avatar className="cursor-pointer border border-gray-200">
               <AvatarImage src={user.avatar || ""} />
               <AvatarFallback className="bg-primary/10 text-primary">
-                {user.username ? user.username : "User"}
+                <Image
+                  src="https://firebasestorage.googleapis.com/v0/b/fashion-store-f3b8b.firebasestorage.app/o/default-avatar.png?alt=media&token=d5cae13a-4bb2-4eb5-8bcf-7a3960faf6ba"
+                  alt="avatar"
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>

@@ -8,8 +8,12 @@ import { useForm } from "react-hook-form";
 import slugify from "slugify";
 import { z } from "zod";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -29,14 +33,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useCollectionStore } from "@/store/collectionStore";
@@ -78,11 +74,10 @@ export default function CollectionFormModal({
   } = useProductStore();
   const { uploadImage, deleteImage, loading: uploadLoading } = useUploadStore();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [isUrlManuallyEdited, setIsUrlManuallyEdited] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [productSearch, setProductSearch] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<ProductData[]>([]);
-  const [productSheetOpen, setProductSheetOpen] = useState(false);
+  const [productSelectorOpen, setProductSelectorOpen] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -118,7 +113,7 @@ export default function CollectionFormModal({
 
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      if (name === "title" && !isUrlManuallyEdited) {
+      if (name === "title") {
         const title = form.getValues("title");
         if (title) {
           const slug = slugify(title, { lower: true, strict: true });
@@ -130,7 +125,7 @@ export default function CollectionFormModal({
     });
 
     return () => subscription.unsubscribe();
-  }, [form, isUrlManuallyEdited]);
+  }, [form]);
 
   useEffect(() => {
     if (collection) {
@@ -170,7 +165,7 @@ export default function CollectionFormModal({
       setPreviewImage(null);
       setSelectedProducts([]);
     }
-    setIsUrlManuallyEdited(false);
+    setProductSearch("");
   }, [collection, form, open, products]);
 
   const filteredProducts = products.filter((product) => {
@@ -188,7 +183,6 @@ export default function CollectionFormModal({
 
     try {
       setIsImageUploading(true);
-      // Use a structured path specific to collections with ID if editing
       const collectionId = collection?.id || `new-${Date.now()}`;
       const uploadPath = `collections/${collectionId}`;
       const uploadId = `collection-${collectionId}`;
@@ -196,7 +190,6 @@ export default function CollectionFormModal({
       const image = await uploadImage(file, uploadPath, uploadId);
 
       if (image) {
-        // Delete old image if exists
         const currentImage = form.getValues("image");
         if (currentImage && currentImage !== image) {
           await deleteImage(currentImage);
@@ -226,28 +219,6 @@ export default function CollectionFormModal({
     setPreviewImage(null);
   };
 
-  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsUrlManuallyEdited(true);
-    const newSlug = e.target.value;
-    form.setValue("slug", newSlug, { shouldValidate: true });
-    form.setValue("url", `/collections/${newSlug}`, { shouldValidate: true });
-  };
-
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsUrlManuallyEdited(true);
-    form.setValue("url", e.target.value, { shouldValidate: true });
-  };
-
-  const resetSlug = () => {
-    setIsUrlManuallyEdited(false);
-    const title = form.getValues("title");
-    if (title) {
-      const slug = slugify(title, { lower: true, strict: true });
-      form.setValue("slug", slug, { shouldValidate: true });
-      form.setValue("url", `/collections/${slug}`, { shouldValidate: true });
-    }
-  };
-
   const toggleProduct = (product: ProductData) => {
     const productId = product.id as string;
     const currentProductIds = form.getValues("productIds") || [];
@@ -261,17 +232,6 @@ export default function CollectionFormModal({
       newProductIds = [...currentProductIds, productId];
       newSelectedProducts = [...selectedProducts, product];
     }
-
-    form.setValue("productIds", newProductIds, { shouldValidate: true });
-    setSelectedProducts(newSelectedProducts);
-  };
-
-  const removeProduct = (productId: string) => {
-    const currentProductIds = form.getValues("productIds") || [];
-    const newProductIds = currentProductIds.filter((id) => id !== productId);
-    const newSelectedProducts = selectedProducts.filter(
-      (p) => p.id !== productId
-    );
 
     form.setValue("productIds", newProductIds, { shouldValidate: true });
     setSelectedProducts(newSelectedProducts);
@@ -346,67 +306,9 @@ export default function CollectionFormModal({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="slug"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex justify-between items-center">
-                    <FormLabel>Slug</FormLabel>
-                    {isUrlManuallyEdited && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={resetSlug}
-                        className="h-6 px-2 text-xs"
-                        disabled={isFormDisabled}
-                      >
-                        Reset
-                      </Button>
-                    )}
-                  </div>
-                  <FormControl>
-                    <Input
-                      placeholder="collection-slug"
-                      {...field}
-                      onChange={handleSlugChange}
-                      disabled={isFormDisabled}
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    {isUrlManuallyEdited
-                      ? "Custom slug"
-                      : "Auto-generated from title"}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="/collections/collection-slug"
-                      {...field}
-                      onChange={handleUrlChange}
-                      disabled={isFormDisabled}
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    {isUrlManuallyEdited
-                      ? "Custom URL"
-                      : "Auto-generated from slug"}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Hidden fields for slug and URL */}
+            <input type="hidden" {...form.register("slug")} />
+            <input type="hidden" {...form.register("url")} />
 
             <FormField
               control={form.control}
@@ -447,192 +349,148 @@ export default function CollectionFormModal({
               )}
             />
 
-            {/* Products Selection */}
             <FormField
               control={form.control}
               name="productIds"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Products</FormLabel>
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2 mb-2 min-h-10">
-                      {selectedProducts.length > 0 ? (
-                        selectedProducts.map((product) => (
-                          <Badge
-                            key={product.id}
-                            variant="secondary"
-                            className="flex items-center gap-1 pl-2"
-                          >
-                            {product.title}
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-5 p-0 ml-1 hover:bg-destructive hover:text-destructive-foreground rounded-full"
-                              onClick={() =>
-                                removeProduct(product.id as string)
-                              }
-                              disabled={isFormDisabled}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        ))
-                      ) : (
-                        <div className="text-sm text-muted-foreground">
-                          No products selected
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Product Selection Dialog */}
-                    <Sheet
-                      open={productSheetOpen}
-                      onOpenChange={setProductSheetOpen}
+                  <FormControl>
+                    <Collapsible
+                      open={productSelectorOpen}
+                      onOpenChange={setProductSelectorOpen}
+                      className="w-full"
                     >
-                      <SheetTrigger asChild>
+                      <CollapsibleTrigger asChild>
                         <Button
                           type="button"
                           variant="outline"
-                          className="w-full"
+                          className="w-full justify-between"
                           disabled={isFormDisabled || productsLoading}
                         >
-                          {productsLoading ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
+                          <div className="flex items-center">
                             <Search className="mr-2 h-4 w-4" />
-                          )}
-                          Select Products
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent
-                        side="right"
-                        className="w-[85%] sm:w-[600px] px-5 py-2"
-                      >
-                        <SheetHeader>
-                          <SheetTitle>Select Products</SheetTitle>
-                          <SheetDescription>
-                            Choose the products you want to include in this
-                            collection
-                          </SheetDescription>
-                        </SheetHeader>
-
-                        <div className="py-4">
-                          <div className="relative">
-                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              placeholder="Search products by name or category..."
-                              className="pl-8"
-                              value={productSearch}
-                              onChange={(e) => setProductSearch(e.target.value)}
-                            />
+                            Select Products ({selectedProducts.length})
                           </div>
+                          <span className="text-xs text-muted-foreground">
+                            {selectedProducts.length > 0
+                              ? `${selectedProducts.length} product${
+                                  selectedProducts.length !== 1 ? "s" : ""
+                                } selected`
+                              : "No products selected"}
+                          </span>
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2 border rounded-md p-2">
+                        <div className="relative mb-2">
+                          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search products..."
+                            className="pl-8"
+                            value={productSearch}
+                            onChange={(e) => setProductSearch(e.target.value)}
+                          />
                         </div>
 
-                        <ScrollArea className="h-[500px] rounded-md border">
-                          <div className="p-4">
-                            {productsLoading ? (
-                              <div className="flex items-center justify-center h-20">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                              </div>
-                            ) : products.length === 0 ? (
-                              <div className="flex items-center justify-center h-20 text-muted-foreground">
-                                No products found
-                              </div>
-                            ) : filteredProducts.length === 0 ? (
-                              <div className="flex items-center justify-center h-20 text-muted-foreground">
-                                No products match your search
-                              </div>
-                            ) : (
-                              <div className="grid grid-cols-1 gap-2">
-                                {filteredProducts.map((product) => {
-                                  const isSelected = field.value?.includes(
-                                    product.id as string
-                                  );
-                                  return (
-                                    <div
-                                      key={product.id}
-                                      className={`flex items-center p-2 rounded-md cursor-pointer hover:bg-accent ${
-                                        isSelected ? "bg-accent" : ""
-                                      }`}
-                                      onClick={() => toggleProduct(product)}
-                                    >
-                                      <div className="relative size-12 rounded-md overflow-hidden mr-3">
-                                        <Image
-                                          src={
-                                            product.image ||
-                                            "/placeholder-image.png"
-                                          }
-                                          alt={product.title || ""}
-                                          fill
-                                          className="object-cover"
-                                        />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">
-                                          {product.title}
-                                        </p>
-                                        <div className="text-xs text-muted-foreground">
-                                          <span className="mr-2">
-                                            {product.category}
-                                          </span>
-                                          <span>
-                                            {formatCurrency(
-                                              product.sale_price ||
-                                                product.price
-                                            )}
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      <div className="flex-shrink-0 ml-2">
-                                        <div
-                                          className={`size-5 rounded-full border flex items-center justify-center
-                                            ${
-                                              isSelected
-                                                ? "bg-primary border-transparent"
-                                                : "border-gray-300"
-                                            }`}
-                                        >
-                                          {isSelected && (
-                                            <Check className="h-3 w-3 text-primary-foreground" />
+                        <ScrollArea className="h-[250px]">
+                          {productsLoading ? (
+                            <div className="flex items-center justify-center h-20">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                          ) : filteredProducts.length === 0 ? (
+                            <div className="flex items-center justify-center h-20 text-muted-foreground">
+                              No products found
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              {filteredProducts.map((product) => {
+                                const isSelected = field.value?.includes(
+                                  product.id as string
+                                );
+                                return (
+                                  <div
+                                    key={product.id}
+                                    className={`flex items-center p-2 rounded-md cursor-pointer hover:bg-accent ${
+                                      isSelected ? "bg-accent" : ""
+                                    }`}
+                                    onClick={() => toggleProduct(product)}
+                                  >
+                                    <div className="relative size-8 rounded-md overflow-hidden mr-3">
+                                      <Image
+                                        src={
+                                          product.image ||
+                                          "/placeholder-image.png"
+                                        }
+                                        alt={product.title || ""}
+                                        fill
+                                        className="object-cover"
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium truncate">
+                                        {product.title}
+                                      </p>
+                                      <div className="text-xs text-muted-foreground">
+                                        <span className="mr-2">
+                                          {product.category}
+                                        </span>
+                                        <span>
+                                          {formatCurrency(
+                                            product.sale_price || product.price
                                           )}
-                                        </div>
+                                        </span>
                                       </div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
+
+                                    <div className="flex-shrink-0 ml-2">
+                                      <div
+                                        className={`size-5 rounded-full border flex items-center justify-center
+                                          ${
+                                            isSelected
+                                              ? "bg-primary border-transparent"
+                                              : "border-gray-300"
+                                          }`}
+                                      >
+                                        {isSelected && (
+                                          <Check className="h-3 w-3 text-primary-foreground" />
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </ScrollArea>
 
-                        <div className="mt-4 flex justify-end">
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-xs text-muted-foreground">
+                            {selectedProducts.length} of {products.length}{" "}
+                            products selected
+                          </span>
                           <Button
                             type="button"
-                            onClick={() => setProductSheetOpen(false)}
+                            size="sm"
+                            variant="default"
+                            onClick={() => setProductSelectorOpen(false)}
                           >
                             Done
                           </Button>
                         </div>
-                      </SheetContent>
-                    </Sheet>
-                  </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </FormControl>
+                  <FormMessage />
                   <input
                     type="hidden"
                     name={field.name}
+                    value={field.value?.join(",") || ""}
                     onChange={(e) => {
                       field.onChange(
                         e.target.value ? e.target.value.split(",") : []
                       );
                     }}
-                    value={field.value?.join(",") || ""}
                   />
-                  <FormDescription>
-                    {selectedProducts.length} product
-                    {selectedProducts.length !== 1 ? "s" : ""} selected
-                  </FormDescription>
-                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -747,7 +605,7 @@ export default function CollectionFormModal({
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    {collection ? "Save Changes" : "Create Collection"}
+                    {collection ? "Save" : "Create Collection"}
                   </>
                 )}
               </Button>

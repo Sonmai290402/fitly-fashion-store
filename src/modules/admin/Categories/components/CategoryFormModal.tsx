@@ -158,7 +158,6 @@ export default function CategoryFormModal({
     if (!file) return;
 
     try {
-      // Use a structured path with category ID if editing
       const categoryId = category?.id || `new-${Date.now()}`;
       const uploadPath = `categories/${categoryId}`;
       const uploadId = `category-${categoryId}`;
@@ -167,7 +166,6 @@ export default function CategoryFormModal({
       const image = await uploadImage(file, uploadPath, uploadId);
 
       if (image) {
-        // Delete old image if it exists
         const currentImage = form.getValues("image");
         if (currentImage && currentImage !== image) {
           await deleteImage(currentImage);
@@ -437,7 +435,7 @@ export default function CategoryFormModal({
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    {category ? "Save Changes" : "Create Category"}
+                    {category ? "Save" : "Create Category"}
                   </>
                 )}
               </Button>

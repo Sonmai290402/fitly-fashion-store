@@ -326,29 +326,6 @@ const ProductFormModal = ({
     });
   };
 
-  // const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (!file) return;
-
-  //   const imageUrl = await uploadImage(file, "mainImage");
-
-  //   if (imageUrl) {
-  //     setValue("image", imageUrl, {
-  //       shouldValidate: true,
-  //       shouldDirty: true,
-  //     });
-  //     setPreviewImage(imageUrl);
-  //   }
-  // };
-
-  // const removeImage = () => {
-  //   setValue("image", "", {
-  //     shouldValidate: true,
-  //     shouldDirty: true,
-  //   });
-  //   setPreviewImage(null);
-  // };
-
   const handleRemoveColor = (index: number) => {
     setColorToRemove(index);
     setIsRemoveColor(true);

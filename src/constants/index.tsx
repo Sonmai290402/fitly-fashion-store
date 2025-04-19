@@ -89,7 +89,7 @@ export const adminMenuItems = [
   },
   {
     url: "/admin/users",
-    title: "Users",
+    title: "User Management",
     icon: (className?: string) => <UserCog className={className} />,
   },
   {
@@ -99,7 +99,7 @@ export const adminMenuItems = [
   },
   {
     url: "/admin/orders",
-    title: "Orders",
+    title: "Order Management",
     icon: (className?: string) => <Receipt className={className} />,
   },
   {

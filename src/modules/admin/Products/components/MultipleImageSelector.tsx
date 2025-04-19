@@ -30,19 +30,16 @@ export default function MultipleImageSelector({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Filter out invalid images (empty URLs or undefined)
   const validImages = images.filter(
     (img) => img && img.url && img.url.trim() !== ""
   );
 
-  // Handle file selection
   const handleFilesSelected = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    // Check if adding these files would exceed max count
     if (validImages.length + files.length > maxImages) {
       toast.error(`You can upload a maximum of ${maxImages} images`);
       return;
@@ -55,19 +52,16 @@ export default function MultipleImageSelector({
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
-        // Validate file type
         if (!file.type.startsWith("image/")) {
           toast.error(`"${file.name}" is not an image file`);
           continue;
         }
 
-        // Validate file size
         if (file.size > 2 * 1024 * 1024) {
           toast.error(`"${file.name}" exceeds the maximum size of 2MB`);
           continue;
         }
 
-        // Upload image
         const uploadId = `multi-${Date.now()}-${i}`;
         const imageUrl = await uploadImage(file, uploadPath, uploadId);
 
@@ -78,7 +72,6 @@ export default function MultipleImageSelector({
 
       onChange(newImages);
 
-      // Reset file input to allow selecting the same files again
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -90,15 +83,12 @@ export default function MultipleImageSelector({
     }
   };
 
-  // Handle removing an image
   const handleRemoveImage = async (index: number) => {
     const imageToRemove = validImages[index];
 
     try {
-      // Delete from storage
       await deleteImage(imageToRemove.url);
 
-      // Update state
       const updatedImages = [...validImages];
       updatedImages.splice(index, 1);
       onChange(updatedImages);
@@ -108,18 +98,16 @@ export default function MultipleImageSelector({
     }
   };
 
-  // Calculate if any upload is in progress
   const isAnyUploading = isUploading || Object.values(loading).some(Boolean);
   const canAddMore = validImages.length < maxImages;
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        {/* Render existing images */}
+    <div className={`space-y-2 my-5 ${className}`}>
+      <div className="flex gap-3">
         {validImages.length > 0
           ? validImages.map((image, index) => (
               <div key={index} className="group relative">
-                <div className="relative h-20 w-full border rounded-md overflow-hidden">
+                <div className="relative aspect-[3/4] w-[100px] border rounded-md overflow-hidden">
                   {image.url && (
                     <Image
                       src={image.url}
@@ -129,7 +117,6 @@ export default function MultipleImageSelector({
                     />
                   )}
 
-                  {/* Remove button - show on hover */}
                   <button
                     type="button"
                     onClick={() => handleRemoveImage(index)}
@@ -163,7 +150,7 @@ export default function MultipleImageSelector({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isAnyUploading}
-              className={`w-full h-full border-2 border-dashed ${
+              className={`w-full h-full border-1 border-dashed ${
                 validImages.length === 0 ? "border-primary" : "border-gray-300"
               } rounded-md flex flex-col items-center justify-center transition-colors hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
@@ -175,7 +162,7 @@ export default function MultipleImageSelector({
                   </span>
                 </>
               ) : (
-                <>
+                <div className="flex flex-col items-center justify-center">
                   <Plus
                     className={`h-6 w-6 ${
                       validImages.length === 0
@@ -194,7 +181,7 @@ export default function MultipleImageSelector({
                       ? "Click to upload images"
                       : "Add images"}
                   </span>
-                </>
+                </div>
               )}
             </button>
           </div>

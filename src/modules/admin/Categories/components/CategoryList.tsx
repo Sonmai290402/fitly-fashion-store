@@ -59,7 +59,7 @@ import {
 } from "@/components/ui/table";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useGenderStore } from "@/store/genderStore";
-import { CategoryData } from "@/types/flashsale.types";
+import { CategoryData } from "@/types/category.types";
 
 import CategoryFormModal from "./CategoryFormModal";
 
@@ -122,30 +122,7 @@ export default function CategoryManagement() {
       enableSorting: false,
       enableHiding: false,
     },
-    {
-      accessorKey: "image",
-      header: "Image",
-      cell: ({ row }) => {
-        const imageUrl = row.getValue("image") as string;
 
-        return (
-          <div className="relative size-12 rounded-md overflow-hidden">
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={row.getValue("title")}
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs">
-                No Image
-              </div>
-            )}
-          </div>
-        );
-      },
-    },
     {
       accessorKey: "title",
       header: ({ column }) => {
@@ -154,9 +131,34 @@ export default function CategoryManagement() {
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Title
+            Category
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const imageUrl = row.original.image;
+        const title = row.original.title;
+
+        return (
+          <div className="flex items-center gap-2">
+            <div className="relative size-12 rounded-md overflow-hidden">
+              {imageUrl ? (
+                <Image
+                  src={imageUrl}
+                  alt={row.getValue("title")}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs">
+                  No Image
+                </div>
+              )}
+            </div>
+
+            <span className="font-medium">{title}</span>
+          </div>
         );
       },
     },
@@ -189,13 +191,6 @@ export default function CategoryManagement() {
           </div>
         );
       },
-    },
-    {
-      accessorKey: "url",
-      header: "Url",
-      cell: ({ row }) => (
-        <span className="text-gray-600">{row.getValue("url")}</span>
-      ),
     },
     {
       accessorKey: "isActive",
@@ -481,14 +476,12 @@ export default function CategoryManagement() {
         </div>
       </div>
 
-      {/* Category Form Modal */}
       <CategoryFormModal
         open={isCategoryModalOpen}
         onOpenChange={setIsCategoryModalOpen}
         category={editingCategory}
       />
 
-      {/* Single Delete Confirmation */}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}

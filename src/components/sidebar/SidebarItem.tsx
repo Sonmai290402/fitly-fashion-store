@@ -20,7 +20,7 @@ const SidebarItem = ({ url = "/", title = "", icon }: AdminSidebarProps) => {
       )}
     >
       <Link href={url} className="flex gap-2 py-4 px-2">
-        {icon(`w-5 h-5 ${isActive && "svg-animate"}`)} {title}
+        {icon(`w-5 h-5`)} {title}
       </Link>
     </li>
   );

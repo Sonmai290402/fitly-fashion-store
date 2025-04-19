@@ -41,8 +41,10 @@ export default function FilterBar({
     (g) => g.title.toLowerCase() === initialFilters.gender
   );
 
-  const availableCategories = selectedGender
-    ? categories.filter((c) => c.genderId === selectedGender.id)
+  const selectedGenderId = selectedGender?.id;
+
+  const availableCategories = selectedGenderId
+    ? categories.filter((c) => c.genderId === selectedGenderId)
     : [];
 
   const isCategoryValidForGender = initialFilters.category
@@ -64,10 +66,12 @@ export default function FilterBar({
   }, [fetchGenders]);
 
   useEffect(() => {
-    if (selectedGender?.id) {
-      fetchCategories(selectedGender.id);
+    if (selectedGenderId) {
+      fetchCategories(selectedGenderId);
+    } else {
+      fetchCategories();
     }
-  }, [selectedGender?.id, fetchCategories]);
+  }, [selectedGenderId, fetchCategories]);
 
   useEffect(() => {
     if (
@@ -101,6 +105,7 @@ export default function FilterBar({
 
         if (key === "gender") {
           params.delete("category");
+          fetchCategories();
         }
       } else {
         params.set(key, newValue);
@@ -118,7 +123,14 @@ export default function FilterBar({
         closeMobileFilters();
       }
     },
-    [searchParams, pathname, router, isMobile, closeMobileFilters]
+    [
+      searchParams,
+      pathname,
+      router,
+      isMobile,
+      closeMobileFilters,
+      fetchCategories,
+    ]
   );
 
   const handleCheckboxChange = useCallback(
@@ -140,6 +152,7 @@ export default function FilterBar({
 
         if (key === "gender") {
           params.delete("category");
+          fetchCategories();
         }
 
         startTransition(() => {
@@ -147,7 +160,7 @@ export default function FilterBar({
         });
       }
     },
-    [searchParams, pathname, router]
+    [searchParams, pathname, router, fetchCategories]
   );
 
   const updateFilters = useCallback(

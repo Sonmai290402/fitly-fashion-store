@@ -3,18 +3,18 @@
 import { AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import React, { useCallback, useRef, useState } from "react";
 
+import { cn } from "@/lib/utils";
 import { CategoryData } from "@/types/category.types";
 
 import CategoryDropdown from "./CategoryDropdown";
 import CollectionDropdown from "./CollectionDropdown";
 import MobileMenu from "./MobileMenu";
 
-const navLinkStyle =
-  "relative after:content-[''] after:absolute after:left-0 after:bottom-[-2px] after:w-0 after:h-[2px] after:bg-black dark:after:bg-white after:transition-all after:duration-300 hover:after:w-full";
-
 const HeaderNav = ({ categories }: { categories: CategoryData[] }) => {
+  const pathname = usePathname();
   const [openDropdown, setOpenDropdown] = useState<
     "category" | "collection" | null
   >(null);
@@ -35,20 +35,38 @@ const HeaderNav = ({ categories }: { categories: CategoryData[] }) => {
     }, 200);
   }, []);
 
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return pathname === "/";
+    }
+    return pathname.startsWith(path);
+  };
+
+  const navLinkClass = (path: string) =>
+    cn(
+      "relative after:content-[''] after:absolute after:left-0 after:bottom-[-2px] after:h-[2px] after:bg-black dark:after:bg-white after:transition-all after:duration-300",
+      isActive(path) ? "after:w-full" : "after:w-0 hover:after:w-full"
+    );
+
   return (
     <>
       <MobileMenu categories={categories} />
 
       <nav className="hidden lg:flex flex-1 items-center gap-6">
-        <Link href="/" className={navLinkStyle}>
+        <Link href="/" className={navLinkClass("/")}>
           Home
         </Link>
-        <Link href="/products" className={navLinkStyle}>
+        <Link href="/products" className={navLinkClass("/products")}>
           All Products
         </Link>
 
         <div
-          className={navLinkStyle}
+          className={cn(
+            "relative",
+            pathname.startsWith("/category")
+              ? "after:content-[''] after:absolute after:left-0 after:bottom-[-2px] after:w-full after:h-[2px] after:bg-black dark:after:bg-white"
+              : navLinkClass("/category")
+          )}
           onMouseEnter={() => handleMouseEnter("category")}
           onMouseLeave={handleMouseLeave}
         >
@@ -63,7 +81,12 @@ const HeaderNav = ({ categories }: { categories: CategoryData[] }) => {
         </div>
 
         <div
-          className={navLinkStyle}
+          className={cn(
+            "relative",
+            pathname.startsWith("/collection")
+              ? "after:content-[''] after:absolute after:left-0 after:bottom-[-2px] after:w-full after:h-[2px] after:bg-black dark:after:bg-white"
+              : navLinkClass("/collection")
+          )}
           onMouseEnter={() => handleMouseEnter("collection")}
           onMouseLeave={handleMouseLeave}
         >

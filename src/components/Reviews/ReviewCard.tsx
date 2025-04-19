@@ -19,9 +19,7 @@ interface ReviewCardProps {
 export function ReviewCard({ review }: ReviewCardProps) {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [currentImage, setCurrentImage] = useState("");
-
   const [helpfulClicked, setHelpfulClicked] = useState(false);
-
   const { markHelpful } = useReviewStore();
 
   const dateTime =
@@ -47,17 +45,30 @@ export function ReviewCard({ review }: ReviewCardProps) {
     setIsImageModalOpen(true);
   };
 
+  const isDeletedUser = !review.user || review.user.username === "Deleted User";
+
   return (
     <div className="border rounded-lg p-3 mb-4 bg-white flex">
       <div className="flex flex-col gap-2 items-center justify-center w-25">
         <Avatar className="size-10">
-          <AvatarImage src={review.user?.avatar || ""} />
-          <AvatarFallback>{review.user?.username || "User"}</AvatarFallback>
+          <AvatarImage
+            src={review.user?.avatar || ""}
+            alt={review.user?.username || "User"}
+          />
+          <AvatarFallback>
+            {isDeletedUser ? "DU" : review.user?.username?.[0] || "U"}
+          </AvatarFallback>
         </Avatar>
 
-        <div className="flex items-center">
-          <h3 className="font-semibold">
-            {review.user?.username || "Anonymous"}
+        <div className="flex items-center justify-center">
+          <h3
+            className={`font-semibold text-center ${
+              isDeletedUser ? "text-gray-500 italic" : ""
+            }`}
+          >
+            {isDeletedUser
+              ? "Deleted User"
+              : review.user?.username || "Anonymous"}
           </h3>
         </div>
       </div>

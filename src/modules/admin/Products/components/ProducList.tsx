@@ -111,8 +111,18 @@ export default function ProductList() {
       enableHiding: false,
     },
     {
-      accessorKey: "image",
-      header: "Image",
+      accessorKey: "title",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Product
+            <ArrowUpDown className="ml-2 size-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => {
         const product = row.original;
         const imageUrl =
@@ -121,33 +131,19 @@ export default function ProductList() {
             : product.colors?.[0]?.images?.[0]?.url || "/placeholder-image.png";
 
         return (
-          <div className="relative size-12 rounded-md overflow-hidden">
-            <Image
-              src={imageUrl}
-              alt={product.title || "Product Image"}
-              fill
-              className="object-cover"
-            />
+          <div className="flex items-center gap-2 max-w-[500px]">
+            <div className="relative size-12 rounded-md overflow-hidden">
+              <Image
+                src={imageUrl}
+                alt={product.title || "Product Image"}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div className="font-medium truncate">{product.title}</div>
           </div>
         );
       },
-    },
-    {
-      accessorKey: "title",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Product Name
-            <ArrowUpDown className="ml-2 size-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => (
-        <div className="font-medium">{row.original.title}</div>
-      ),
     },
     {
       accessorKey: "price",
@@ -168,14 +164,14 @@ export default function ProductList() {
         return (
           <div className="flex items-center gap-2">
             {product.sale_price ? (
-              <>
+              <div className="flex flex-col gap-1">
                 <span className="font-medium ">
                   {formatCurrency(product.sale_price)}
                 </span>
                 <span className="text-gray-500 text-sm line-through">
                   {formatCurrency(product.price)}
                 </span>
-              </>
+              </div>
             ) : (
               <span className="font-medium">
                 {formatCurrency(product.price)}
@@ -194,31 +190,6 @@ export default function ProductList() {
       accessorKey: "category",
       header: "Category",
       cell: ({ row }) => <div>{row.original.category}</div>,
-    },
-    {
-      accessorKey: "colors",
-      header: "Colors",
-      cell: ({ row }) => {
-        const colors = row.original.colors || [];
-
-        return (
-          <div className="flex gap-1">
-            {colors.slice(0, 4).map((color, index) => (
-              <div
-                key={index}
-                className="size-6 rounded-full border"
-                style={{ backgroundColor: color.colorCode }}
-                title={color.name}
-              />
-            ))}
-            {colors.length > 4 && (
-              <div className="size-6 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
-                +{colors.length - 4}
-              </div>
-            )}
-          </div>
-        );
-      },
     },
     {
       accessorKey: "stock",

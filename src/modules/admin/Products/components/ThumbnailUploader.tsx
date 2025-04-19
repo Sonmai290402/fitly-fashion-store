@@ -1,5 +1,3 @@
-// src/components/admin/MainProductImageUploader.tsx
-
 import clsx from "clsx";
 import { Loader, Trash2, Upload } from "lucide-react";
 import Image from "next/image";
@@ -26,7 +24,6 @@ export default function MainProductImageUploader({
   const imageUrl = watch("image");
   const uploadId = "mainImage";
 
-  // Get error message for image field
   const imageError = formState.errors.image?.message as string | undefined;
 
   useEffect(() => {
@@ -41,20 +38,17 @@ export default function MainProductImageUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
 
-    // Validate file size
     if (file.size > 4 * 1024 * 1024) {
       toast.error("Image size should be less than 4MB");
       return;
     }
 
     try {
-      // Delete old image if exists
       if (imageUrl) {
         try {
           await deleteImage(imageUrl);
@@ -63,7 +57,6 @@ export default function MainProductImageUploader({
         }
       }
 
-      // Upload to a structured path
       const uploadPath = `products/main/${productId}`;
       const uploadedUrl = await uploadImage(file, uploadPath, uploadId);
 

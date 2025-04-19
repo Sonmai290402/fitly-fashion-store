@@ -1,7 +1,5 @@
-// Update components/admin/ColorInput.tsx
-
 import { useEffect, useState } from "react";
-import { useFormContext } from "react-hook-form"; // Remove useFieldArray
+import { useFormContext } from "react-hook-form";
 
 import {
   FormControl,
@@ -12,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { commonColors } from "@/constants";
 
-import MultipleImageSelector from "./MultipleImageSelector"; // Import the new component
+import MultipleImageSelector from "./MultipleImageSelector";
 import SizeInput from "./SizeInput";
 
 export default function ColorInput({ nestIndex }: { nestIndex: number }) {
@@ -35,11 +33,7 @@ export default function ColorInput({ nestIndex }: { nestIndex: number }) {
   const imagesError =
     colorErrors?.images?.message ||
     (colorErrors?.images?.root?.message as string);
-  // const sizesError =
-  //   colorErrors?.sizes?.message ||
-  //   (colorErrors?.sizes?.root?.message as string);
 
-  // Get current images for this color
   const allColorImages = watch(`colors.${nestIndex}.images`) || [];
   const colorImages = allColorImages
     .filter((img: ProductImage) => img && img.url && img.url.trim() !== "")
@@ -77,32 +71,26 @@ export default function ColorInput({ nestIndex }: { nestIndex: number }) {
     setIsCustomColor(true);
   };
 
-  // Define image type
   interface ProductImage {
     url: string;
     alt?: string;
     isPrimary?: boolean;
   }
 
-  // Handle image changes
   const handleImagesChange = (newImages: Array<{ url: string }>) => {
-    // Filter out any entries with empty URLs
     const validImages = newImages.filter(
       (img) => img.url && img.url.trim() !== ""
     );
 
-    // Only create image objects if there are valid images
     if (validImages.length === 0) {
-      // When no valid images, set an empty array to meet schema requirements
       setValue(`colors.${nestIndex}.images`, [], {
-        shouldValidate: false, // Don't validate immediately to prevent errors when user is still working
+        shouldValidate: false,
       });
     } else {
-      // When we have valid images, include all properties
       const updatedImages = validImages.map((img, index) => ({
         url: img.url,
         alt: "",
-        isPrimary: index === 0, // Mark first image as primary
+        isPrimary: index === 0,
       }));
 
       setValue(`colors.${nestIndex}.images`, updatedImages, {
@@ -181,7 +169,6 @@ export default function ColorInput({ nestIndex }: { nestIndex: number }) {
         <FormLabel>Images</FormLabel>
         {imagesError && <FormMessage>{imagesError}</FormMessage>}
 
-        {/* Replace the existing image uploader with the new component */}
         <MultipleImageSelector
           images={colorImages}
           onChange={handleImagesChange}

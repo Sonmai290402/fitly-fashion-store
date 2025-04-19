@@ -58,6 +58,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -67,9 +74,7 @@ import {
 } from "@/components/ui/table";
 import { useAuthStore } from "@/store/authStore";
 import { useUserStore } from "@/store/userStore";
-import { UserData } from "@/types/flashsale.types";
-
-import { RoleSelector } from "./RoleSelector";
+import { UserData } from "@/types/user.types";
 
 const UserList = () => {
   const { user: currentUser } = useAuthStore();
@@ -83,12 +88,11 @@ const UserList = () => {
     updateUser,
   } = useUserStore();
 
-  const [editingRoleUserId, setEditingRoleUserId] = useState<string | null>(
-    null
-  );
+  const [editingRoleUserId, setEditingRoleUserId] = useState<string>("");
 
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [editedUserData, setEditedUserData] = useState<Partial<UserData>>({});
+  const [editingUserRole, setEditingUserRole] = useState<string>("");
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -98,6 +102,7 @@ const UserList = () => {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isChangeRoleDialogOpen, setIsChangeRoleDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -112,11 +117,6 @@ const UserList = () => {
     }
   }, [editingUser]);
 
-  const handleSaveRole = async (userId: string, newRole: string) => {
-    await updateUserRole(userId, newRole);
-    setEditingRoleUserId(null);
-  };
-
   const handleSaveUserEdit = async () => {
     if (!editingUser?.uid) return;
 
@@ -126,6 +126,19 @@ const UserList = () => {
     } catch (error) {
       console.error("Error updating user:", error);
     }
+  };
+
+  const handleChangeRole = async (userId: string, role: string) => {
+    setEditingRoleUserId(userId);
+    setEditingUserRole(role);
+    setIsChangeRoleDialogOpen(true);
+  };
+
+  const handleSaveRoleChange = async () => {
+    await updateUserRole(editingRoleUserId, editingUserRole);
+    setEditingRoleUserId("");
+    setEditingUserRole("");
+    setIsChangeRoleDialogOpen(false);
   };
 
   const columns: ColumnDef<UserData>[] = [
@@ -153,7 +166,7 @@ const UserList = () => {
     },
     {
       accessorKey: "username",
-      header: "Username",
+      header: "User",
       cell: ({ row }) => {
         const user = row.original;
         return (
@@ -218,30 +231,27 @@ const UserList = () => {
         const canEditRole =
           currentUser?.role === "admin" && currentUser.uid !== userId;
 
-        if (editingRoleUserId === userId) {
-          return (
-            <RoleSelector
-              value={user.role}
-              onSave={(newRole) => handleSaveRole(userId, newRole)}
-              onCancel={() => setEditingRoleUserId(null)}
-            />
-          );
-        }
-
         return (
-          <div
-            className={`flex items-center gap-2 ${
-              canEditRole ? "cursor-pointer" : ""
-            }`}
-            onClick={() => canEditRole && setEditingRoleUserId(userId)}
-          >
-            <Badge variant={user.role === "admin" ? "default" : "outline"}>
-              {user.role === "admin" ? "Admin" : "User"}
-            </Badge>
-            {canEditRole && (
-              <Pencil className="h-3 w-3 text-gray-400 hover:text-gray-700" />
+          <>
+            {canEditRole ? (
+              <Select
+                value={user.role}
+                onValueChange={(value) => handleChangeRole(userId, value)}
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Badge variant={user.role === "admin" ? "default" : "outline"}>
+                {user.role === "admin" ? "Admin" : "User"}
+              </Badge>
             )}
-          </div>
+          </>
         );
       },
     },
@@ -502,7 +512,29 @@ const UserList = () => {
         )}
       </div>
 
-      {/* Delete User Dialog */}
+      <AlertDialog
+        open={isChangeRoleDialogOpen}
+        onOpenChange={setIsChangeRoleDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change User Role</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to change the role of this user?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-primary hover:bg-primary/80"
+              onClick={handleSaveRoleChange}
+            >
+              Save
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
@@ -527,7 +559,6 @@ const UserList = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Dialog */}
       <AlertDialog
         open={isBulkDeleteDialogOpen}
         onOpenChange={setIsBulkDeleteDialogOpen}

@@ -43,7 +43,7 @@ interface ReviewsState {
   addReview: (
     review: Omit<
       ProductReview,
-      "id" | "helpfulVotes" | "reportCount" | "createdAt" | "updatedAt"
+      "id" | "helpfulVotes" | "createdAt" | "updatedAt"
     >,
     images?: File[]
   ) => Promise<string | null>;
@@ -53,7 +53,6 @@ interface ReviewsState {
   ) => Promise<boolean>;
   deleteReview: (reviewId: string) => Promise<boolean>;
   markHelpful: (reviewId: string) => Promise<boolean>;
-  reportReview: (reviewId: string, reason: string) => Promise<boolean>;
   checkUserReviewEligibility: (
     userId: string,
     productId: string
@@ -83,6 +82,7 @@ export const useReviewStore = create<ReviewsState>((set, get) => ({
         where("status", "==", "approved")
       );
 
+      // Apply sorting
       if (sortBy === "recent") {
         reviewQuery = query(reviewQuery, orderBy("createdAt", "desc"));
       } else if (sortBy === "helpful") {
@@ -93,6 +93,7 @@ export const useReviewStore = create<ReviewsState>((set, get) => ({
         reviewQuery = query(reviewQuery, orderBy("rating", "asc"));
       }
 
+      // Apply rating filter
       if (filterBy !== "all" && !isNaN(parseInt(filterBy))) {
         reviewQuery = query(
           reviewQuery,
@@ -101,7 +102,6 @@ export const useReviewStore = create<ReviewsState>((set, get) => ({
       }
 
       reviewQuery = query(reviewQuery, limit(10));
-
       const snapshot = await getDocs(reviewQuery);
 
       const reviewList = snapshot.docs.map((doc) => ({
@@ -109,29 +109,61 @@ export const useReviewStore = create<ReviewsState>((set, get) => ({
         ...doc.data(),
       })) as ProductReview[];
 
+      // Process reviews and handle potentially deleted users
       const reviewsWithUserData = await Promise.all(
         reviewList.map(async (review) => {
-          const userDoc = await getDocs(
-            query(
-              collection(fireDB, "users"),
-              where("uid", "==", review.userId)
-            )
-          );
+          try {
+            const userDoc = await getDocs(
+              query(
+                collection(fireDB, "users"),
+                where("uid", "==", review.userId)
+              )
+            );
 
-          if (!userDoc.empty) {
-            const userData = userDoc.docs[0].data();
+            if (!userDoc.empty) {
+              // User exists, include user data with the review
+              const userData = userDoc.docs[0].data();
+              return {
+                ...review,
+                user: {
+                  uid: userData.uid,
+                  username: userData.username || "User",
+                  email: userData.email || "",
+                  avatar: userData.avatar || "",
+                },
+                userExists: true,
+              };
+            } else {
+              return {
+                ...review,
+                user: {
+                  uid: review.userId,
+                  username: "Deleted User",
+                  email: "",
+                  avatar:
+                    "https://firebasestorage.googleapis.com/v0/b/fashion-store-f3b8b.firebasestorage.app/o/default-avatar.png?alt=media&token=d5cae13a-4bb2-4eb5-8bcf-7a3960faf6ba",
+                },
+                userExists: false,
+              };
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching user data for review ${review.id}:`,
+              error
+            );
             return {
               ...review,
               user: {
-                uid: userData.uid,
-                username: userData.username,
-                email: userData.email,
-                avatar: userData.avatar,
+                uid: review.userId,
+                username: "Unknown User",
+                email: "",
+                avatar:
+                  "https://firebasestorage.googleapis.com/v0/b/fashion-store-f3b8b.firebasestorage.app/o/default-avatar.png?alt=media&token=d5cae13a-4bb2-4eb5-8bcf-7a3960faf6ba",
               },
+              userExists: false,
+              userError: true,
             };
           }
-
-          return review;
         })
       );
 
@@ -195,30 +227,57 @@ export const useReviewStore = create<ReviewsState>((set, get) => ({
 
       const reviewsWithUserData = await Promise.all(
         newReviews.map(async (review) => {
-          const userDoc = await getDocs(
-            query(
-              collection(fireDB, "users"),
-              where("uid", "==", review.userId)
-            )
-          );
+          try {
+            const userDoc = await getDocs(
+              query(
+                collection(fireDB, "users"),
+                where("uid", "==", review.userId)
+              )
+            );
 
-          if (!userDoc.empty) {
-            const userData = userDoc.docs[0].data();
+            if (!userDoc.empty) {
+              // User exists
+              const userData = userDoc.docs[0].data();
+              return {
+                ...review,
+                user: {
+                  uid: userData.uid,
+                  username: userData.username || "User",
+                  email: userData.email || "",
+                  avatar: userData.avatar || "",
+                },
+                userExists: true,
+              };
+            } else {
+              // User was deleted
+              return {
+                ...review,
+                user: {
+                  uid: review.userId,
+                  username: "Deleted User",
+                  email: "",
+                  avatar: "/images/default-avatar.png",
+                },
+                userExists: false,
+              };
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching user data for review ${review.id}:`,
+              error
+            );
             return {
               ...review,
               user: {
-                uid: userData.uid,
-                email: userData.email ?? null,
-                username: userData.username ?? null,
-                avatar: userData.avatar ?? undefined,
-                role: userData.role ?? undefined,
-                createdAt: userData.createdAt ?? undefined,
-                updatedAt: userData.updatedAt ?? undefined,
+                uid: review.userId,
+                username: "Unknown User",
+                email: "",
+                avatar: "/images/default-avatar.png",
               },
+              userExists: false,
+              userError: true,
             };
           }
-
-          return review;
         })
       );
 
@@ -303,9 +362,6 @@ export const useReviewStore = create<ReviewsState>((set, get) => ({
         set({ loading: false });
         return null;
       }
-
-      // We now expect imageUrls to be a string array of already uploaded image URLs
-      // No need to upload images here as they are already uploaded by the ImageUploader component
 
       const newReview = await addDoc(collection(fireDB, "reviews"), {
         ...reviewData,
@@ -540,36 +596,6 @@ export const useReviewStore = create<ReviewsState>((set, get) => ({
         error: (error as Error).message,
         loading: false,
       });
-      return false;
-    }
-  },
-
-  reportReview: async (reviewId, reason) => {
-    set({ loading: true, error: null });
-
-    try {
-      await addDoc(collection(fireDB, "reviewReports"), {
-        reviewId,
-        reason,
-        timestamp: serverTimestamp(),
-      });
-
-      await updateDoc(doc(fireDB, "reviews", reviewId), {
-        reportCount: increment(1),
-      });
-
-      toast.success(
-        "Review reported. Thank you for helping us maintain quality."
-      );
-      set({ loading: false });
-      return true;
-    } catch (error) {
-      console.error("Error reporting review:", error);
-      set({
-        error: (error as Error).message,
-        loading: false,
-      });
-      toast.error("Failed to report review. Please try again.");
       return false;
     }
   },

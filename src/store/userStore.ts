@@ -127,7 +127,6 @@ export const useUserStore = create<UserState>((set) => ({
   updateUserRole: async (id: string, role: string) => {
     set({ loading: true, error: null });
     try {
-      // Only allow "admin" or "user" roles
       if (role !== "admin" && role !== "user") {
         throw new Error("Invalid role. Role must be either 'admin' or 'user'");
       }

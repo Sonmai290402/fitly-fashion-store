@@ -12,7 +12,6 @@ export type ProductReview = {
   comment: string;
   images?: string[];
   helpfulVotes: number;
-  reportCount: number;
   status: "pending" | "approved" | "rejected";
   createdAt: string | Timestamp;
   updatedAt: string | Timestamp;
