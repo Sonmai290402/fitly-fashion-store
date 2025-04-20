@@ -4,7 +4,7 @@ import React, { memo, useEffect, useState } from "react";
 
 import ProductCard from "@/components/ProductCard";
 import { useProductStore } from "@/store/productStore";
-import { ProductData } from "@/types/flashsale.types";
+import { ProductData } from "@/types/product.types";
 
 const CollectionCard = memo(({ productId }: { productId: string }) => {
   const { loading, fetchProductById } = useProductStore();

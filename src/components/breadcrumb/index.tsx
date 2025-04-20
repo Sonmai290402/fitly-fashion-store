@@ -2,7 +2,7 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import React, { Fragment } from "react";
 
-import { ProductData, ProductFilters } from "@/types/flashsale.types";
+import { ProductData, ProductFilters } from "@/types/product.types";
 
 interface BreadcrumbProps {
   filters?: ProductFilters;

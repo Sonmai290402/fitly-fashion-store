@@ -20,7 +20,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useCollectionStore } from "@/store/collectionStore";
-import { CategoryData } from "@/types/flashsale.types";
+import { CategoryData } from "@/types/category.types";
 
 type MobileMenuProps = {
   categories: CategoryData[];

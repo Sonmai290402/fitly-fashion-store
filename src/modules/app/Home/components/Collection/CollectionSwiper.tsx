@@ -16,7 +16,7 @@ import SwiperNavButton from "@/components/ui/SwiperNavButton";
 import SwiperPagination from "@/components/ui/SwiperPagination";
 import { useResponsiveSwiper } from "@/hooks/useResponsiveSwiper";
 import useScrollView from "@/hooks/useScrollView";
-import { CollectionData } from "@/types/flashsale.types";
+import { CollectionData } from "@/types/collection.types";
 
 import CollectionCard from "./CollectionCard";
 

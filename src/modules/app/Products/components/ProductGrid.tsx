@@ -7,7 +7,7 @@ import ProductSkeletonGrid from "@/components/ui/ProductSkeletonGrid";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useGenderStore } from "@/store/genderStore";
 import { useProductStore } from "@/store/productStore";
-import { ProductFilters } from "@/types/flashsale.types";
+import { ProductFilters } from "@/types/product.types";
 
 import ProductCard from "../../../../components/ProductCard";
 

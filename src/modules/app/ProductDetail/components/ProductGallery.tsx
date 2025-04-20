@@ -1,7 +1,7 @@
 import Image from "next/image";
 import React, { useMemo } from "react";
 
-import { ProductData } from "@/types/flashsale.types";
+import { ProductData } from "@/types/product.types";
 
 type ProductGalleryProps = {
   product: ProductData;

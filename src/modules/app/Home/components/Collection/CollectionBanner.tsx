@@ -1,14 +1,16 @@
 import { motion } from "framer-motion";
 import { MoveRight } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 import { Button } from "@/components/ui/button";
 import useScrollView from "@/hooks/useScrollView";
-import { CollectionData } from "@/types/flashsale.types";
+import { CollectionData } from "@/types/collection.types";
 
 const CollectionBanner = ({ collection }: { collection: CollectionData }) => {
   const { inView, ref } = useScrollView();
+  const router = useRouter();
   return (
     <div className="relative flex flex-col w-full aspect-[16/9] md:aspect-[16/7] lg:aspect-[16/6] overflow-hidden">
       <Image
@@ -40,7 +42,8 @@ const CollectionBanner = ({ collection }: { collection: CollectionData }) => {
         >
           <Button
             variant="outline"
-            className="text-black  text-sm md:text-xl !px-5 !py-5 !ld:px-15 !lg:py-7 rounded-full mt-5"
+            onClick={() => router.push(collection.url || "")}
+            className="text-black  text-sm md:text-xl !px-10 !py-6 rounded-full mt-5"
           >
             SHOP NOW
             <MoveRight className="size-5" />

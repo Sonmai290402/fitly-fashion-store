@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ProductData } from "@/types/flashsale.types";
+import { ProductData } from "@/types/product.types";
 import { formatCurrency } from "@/utils/formatCurrency";
 
 type ProductInfoProps = {

@@ -1,11 +1,11 @@
 import React from "react";
 
-import Collections from "@/modules/app/Collections";
+import Collection from "@/modules/app/Collections/CollectionDetail";
 
 const page = () => {
   return (
     <>
-      <Collections />
+      <Collection />
     </>
   );
 };

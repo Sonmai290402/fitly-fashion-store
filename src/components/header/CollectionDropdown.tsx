@@ -10,10 +10,10 @@ const CollectionDropdown = ({ isOpen }: { isOpen: boolean }) => {
   const { collections, fetchCollections } = useCollectionStore();
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && collections.length === 0) {
       fetchCollections();
     }
-  }, [isOpen, fetchCollections]);
+  }, [isOpen, fetchCollections, collections.length]);
   return (
     <AnimatePresence>
       {isOpen && (

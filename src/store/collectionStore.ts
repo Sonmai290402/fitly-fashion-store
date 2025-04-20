@@ -16,14 +16,22 @@ import { create } from "zustand";
 
 import { fireDB } from "@/firebase/firebaseConfig";
 import { CollectionData } from "@/types/collection.types";
+import { ProductData } from "@/types/product.types";
 import { handleFirebaseError } from "@/utils/configFirebaseError";
 
 type CollectionState = {
   collections: CollectionData[];
+  activeCollection: CollectionData | null;
+  getActiveCollections: () => CollectionData[];
+  setActiveCollection: (collection: CollectionData | null) => void;
   loading: boolean;
   error: string | null;
   fetchCollections: () => Promise<boolean>;
   getCollection: (id: string) => Promise<CollectionData | null>;
+  getCollectionBySlug: (slug: string) => Promise<CollectionData | null>;
+  getProductsByCollection: (
+    collectionIdOrSlug: string
+  ) => Promise<ProductData[]>;
   createCollection: (
     collection: Partial<CollectionData>
   ) => Promise<string | null>;
@@ -48,10 +56,19 @@ type CollectionState = {
   bulkDeleteCollections: (ids: string[]) => Promise<boolean>;
 };
 
-export const useCollectionStore = create<CollectionState>((set) => ({
+export const useCollectionStore = create<CollectionState>((set, get) => ({
   collections: [],
+  activeCollection: null,
   loading: false,
   error: null,
+
+  getActiveCollections: () => {
+    return get().collections.filter((collection) => collection.isActive);
+  },
+
+  setActiveCollection: (collection) => {
+    set({ activeCollection: collection });
+  },
 
   fetchCollections: async () => {
     set({ loading: true, error: null });
@@ -381,6 +398,77 @@ export const useCollectionStore = create<CollectionState>((set) => ({
       set({ error: (error as Error).message, loading: false });
       handleFirebaseError(error as FirebaseError);
       return false;
+    }
+  },
+  getCollectionBySlug: async (slug: string) => {
+    try {
+      const collectionsRef = collection(fireDB, "collections");
+      const q = query(collectionsRef, where("slug", "==", slug));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const docData = querySnapshot.docs[0].data();
+        const collectionData = {
+          id: querySnapshot.docs[0].id,
+          ...docData,
+          createdAt:
+            docData.createdAt?.toDate?.()?.toISOString() || docData.createdAt,
+          updatedAt:
+            docData.updatedAt?.toDate?.()?.toISOString() || docData.updatedAt,
+        } as CollectionData;
+
+        set({ activeCollection: collectionData });
+        return collectionData;
+      }
+      return null;
+    } catch (error) {
+      handleFirebaseError(error as FirebaseError);
+      return null;
+    }
+  },
+
+  getProductsByCollection: async (collectionIdOrSlug: string) => {
+    set({ loading: true });
+
+    try {
+      let collectionData = await get().getCollection(collectionIdOrSlug);
+
+      if (!collectionData) {
+        collectionData = await get().getCollectionBySlug(collectionIdOrSlug);
+      }
+
+      if (
+        !collectionData ||
+        !collectionData.productIds ||
+        collectionData.productIds.length === 0
+      ) {
+        set({ loading: false });
+        return [];
+      }
+
+      const productsRef = collection(fireDB, "products");
+
+      const productDocs = await Promise.all(
+        collectionData.productIds.map((productId) =>
+          getDoc(doc(productsRef, productId))
+        )
+      );
+
+      const products: ProductData[] = productDocs
+        .filter((docSnap) => docSnap.exists())
+        .map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        })) as ProductData[];
+
+      set({ loading: false });
+      return products;
+    } catch (error) {
+      set({
+        error: (error as Error).message,
+        loading: false,
+      });
+      return [];
     }
   },
 }));

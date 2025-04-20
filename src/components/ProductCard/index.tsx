@@ -7,7 +7,7 @@ import { twMerge } from "tailwind-merge";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ProductData } from "@/types/flashsale.types";
+import { ProductData } from "@/types/product.types";
 import { formatCurrency } from "@/utils/formatCurrency";
 
 type ProductCardProps = {

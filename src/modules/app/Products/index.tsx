@@ -6,7 +6,7 @@ import React, { useMemo } from "react";
 import Breadcrumb from "@/components/breadcrumb";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useGenderStore } from "@/store/genderStore";
-import { ProductFilters } from "@/types/flashsale.types";
+import { ProductFilters } from "@/types/product.types";
 
 import FilterBar from "./components/FilterBar";
 import MobileFilterSidebar from "./components/MobileFilterSidebar";
