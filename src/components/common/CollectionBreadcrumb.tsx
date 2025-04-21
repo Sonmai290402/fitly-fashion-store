@@ -29,7 +29,6 @@ const CollectionBreadcrumb = ({
     href: "/collections",
   });
 
-  // If viewing a collection
   if (collection) {
     crumbs.push({
       label: collection.title,

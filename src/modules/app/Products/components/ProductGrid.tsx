@@ -2,14 +2,14 @@
 
 import React, { memo, useEffect, useMemo, useState } from "react";
 
-import NoProductFound from "@/components/ui/NoProductFound";
-import ProductSkeletonGrid from "@/components/ui/ProductSkeletonGrid";
+import NoProductFound from "@/components/common/NoProductFound";
+import ProductSkeletonGrid from "@/components/common/ProductSkeletonGrid";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useGenderStore } from "@/store/genderStore";
 import { useProductStore } from "@/store/productStore";
 import { ProductFilters } from "@/types/product.types";
 
-import ProductCard from "../../../../components/ProductCard";
+import ProductCard from "../../../../components/common/ProductCard";
 
 type ProductGridProps = {
   filters: ProductFilters;

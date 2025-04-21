@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import ProductCard from "@/components/ProductCard";
+import ProductCard from "@/components/common/ProductCard";
 import {
   Select,
   SelectContent,

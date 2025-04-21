@@ -11,9 +11,9 @@ import React from "react";
 import { Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
-import HeadingTypo from "@/components/ui/HeadingTypo";
-import SwiperNavButton from "@/components/ui/SwiperNavButton";
-import SwiperPagination from "@/components/ui/SwiperPagination";
+import HeadingTypo from "@/components/common/HeadingTypo";
+import SwiperNavButton from "@/components/common/SwiperNavButton";
+import SwiperPagination from "@/components/common/SwiperPagination";
 import { useResponsiveSwiper } from "@/hooks/useResponsiveSwiper";
 import useScrollView from "@/hooks/useScrollView";
 import { CollectionData } from "@/types/collection.types";

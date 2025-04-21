@@ -43,7 +43,7 @@ const CollectionBanner = ({ collection }: { collection: CollectionData }) => {
           <Button
             variant="outline"
             onClick={() => router.push(collection.url || "")}
-            className="text-black  text-sm md:text-xl !px-10 !py-6 rounded-full mt-5"
+            className="text-black text-sm md:text-xl !px-10 !py-6 rounded-full mt-5 dark:bg-darker dark:text-white dark:hover:bg-black/80 dark:border-none bg-white hover:bg-white/90 border-2 border-white shadow-md transition-all duration-300 ease-in-out"
           >
             SHOP NOW
             <MoveRight className="size-5" />

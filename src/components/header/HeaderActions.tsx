@@ -8,6 +8,7 @@ import { headerActionItems } from "@/constants";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
 import { useAuthStore } from "@/store/authStore";
 
+import { ModeToggle } from "../common/ModeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
   DropdownMenu,
@@ -45,6 +46,8 @@ const HeaderActions = () => {
           <button className="p-2 hover:bg-gray-100 rounded-full">{icon}</button>
         </Link>
       ))}
+
+      <ModeToggle />
 
       {user ? (
         <DropdownMenu>

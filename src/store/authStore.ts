@@ -26,7 +26,17 @@ import { LoginCredentials, SignUpCredentials } from "@/types/auth.types";
 import { UserData } from "@/types/user.types";
 import { handleFirebaseError } from "@/utils/configFirebaseError";
 
-const USER_STORAGE_KEY = "auth_user_data";
+export const STORAGE_KEYS = {
+  AUTH_USER: "auth_user_data",
+  REVIEW_VOTES: "review-store",
+  // WISHLIST: "wishlist-items",
+  // CART: "cart-items",
+  // RECENT_VIEWS: "recently-viewed",
+};
+
+const USER_SPECIFIC_STORAGE_KEYS = Object.values(STORAGE_KEYS);
+
+const AUTH_COOKIE = "auth_token";
 
 type AuthState = {
   user: UserData | null;
@@ -38,9 +48,25 @@ type AuthState = {
   setUser: (user: UserData | null) => void;
 };
 
+const clearAllUserData = () => {
+  try {
+    deleteCookie(AUTH_COOKIE);
+
+    USER_SPECIFIC_STORAGE_KEYS.forEach((key) => {
+      localStorage.removeItem(key);
+    });
+
+    window.dispatchEvent(new Event("storage"));
+
+    console.log("All user data cleared successfully");
+  } catch (e) {
+    console.error("Error clearing user data:", e);
+  }
+};
+
 const saveUserToStorage = (userData: UserData | null) => {
   if (userData) {
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(userData));
     const authToken = {
       uid: userData.uid,
       email: userData.email,
@@ -56,21 +82,21 @@ const saveUserToStorage = (userData: UserData | null) => {
       httpOnly: false,
     });
   } else {
-    localStorage.removeItem(USER_STORAGE_KEY);
-    deleteCookie("auth_token");
+    clearAllUserData();
   }
 };
 
 const loadUserFromStorage = (): UserData | null => {
   if (typeof window === "undefined") return null;
 
-  const storedUser = localStorage.getItem(USER_STORAGE_KEY);
-  if (!storedUser) return null;
-
   try {
+    const storedUser = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+    if (!storedUser) return null;
     return JSON.parse(storedUser) as UserData;
   } catch (e) {
     console.error("Error parsing stored user data:", e);
+    // If there's an error parsing, clear the invalid data
+    localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
     return null;
   }
 };

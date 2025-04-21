@@ -11,8 +11,8 @@ import { Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import SwiperNavButton from "@/components/ui/SwiperNavButton";
-import SwiperPagination from "@/components/ui/SwiperPagination";
+import SwiperNavButton from "@/components/common/SwiperNavButton";
+import SwiperPagination from "@/components/common/SwiperPagination";
 import { useResponsiveSwiper } from "@/hooks/useResponsiveSwiper";
 import useScrollView from "@/hooks/useScrollView";
 import { useCategoryStore } from "@/store/categoryStore";

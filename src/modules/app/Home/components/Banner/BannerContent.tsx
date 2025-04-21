@@ -20,7 +20,9 @@ const BannerContent = () => {
           animate={inView && { opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
         >
-          <h1 className="text-3xl md:text-6xl font-bold">SUMMER READY</h1>
+          <h1 className="text-3xl md:text-6xl font-bold dark:text-black">
+            SUMMER READY
+          </h1>
           <p className="text-base md:text-xl text-gray-700 ">
             40K discount for orders from 299K
           </p>
@@ -33,7 +35,7 @@ const BannerContent = () => {
         >
           <Button
             variant="default"
-            className="inline-flex items-center justify-center rounded-full text-sm md:text-md md:py-6 md:w-[200px] bg-darker"
+            className="inline-flex items-center justify-center rounded-full text-sm md:text-md md:py-6 md:w-[200px] bg-darker dark:text-white dark:hover:bg-black/80"
             onClick={() => router.push("/products")}
           >
             SHOP NOW

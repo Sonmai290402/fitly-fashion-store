@@ -24,11 +24,8 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
   const [canReview, setCanReview] = useState(false);
 
   const { user } = useAuthStore();
-  const {
-    fetchProductRatingSummary,
-    productRatings,
-    checkUserReviewEligibility,
-  } = useReviewStore();
+  const { fetchProductRatingSummary, checkUserReviewEligibility } =
+    useReviewStore();
 
   useEffect(() => {
     fetchProductRatingSummary(productId);
@@ -47,14 +44,16 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
     checkEligibility();
   }, [user, productId, checkUserReviewEligibility]);
 
-  const ratingSummary = productRatings[productId] || {
-    averageRating: 0,
-    totalReviews: 0,
-    ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
-  };
+  useEffect(() => {
+    fetchProductRatingSummary(productId);
+  }, [productId, fetchProductRatingSummary]);
 
-  const handleFilterChange = (rating: string) => {
-    setFilterRating(rating);
+  useEffect(() => {
+    setFilterRating("all");
+  }, [productId]);
+
+  const handleRatingFilterChange = (rating: string) => {
+    setFilterRating((current) => (current === rating ? "all" : rating));
   };
 
   const handleFormSuccess = () => {
@@ -81,8 +80,9 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
         </div>
 
         <RatingSummary
-          ratingSummary={ratingSummary}
-          onFilterChange={handleFilterChange}
+          productId={productId}
+          onFilterChange={handleRatingFilterChange}
+          className="mb-6"
         />
 
         <ReviewList productId={productId} initialFilterRating={filterRating} />

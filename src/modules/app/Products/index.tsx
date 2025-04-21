@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import React, { useMemo } from "react";
 
-import Breadcrumb from "@/components/breadcrumb";
+import Breadcrumb from "@/components/common/Breadcrumb";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useGenderStore } from "@/store/genderStore";
 import { ProductFilters } from "@/types/product.types";

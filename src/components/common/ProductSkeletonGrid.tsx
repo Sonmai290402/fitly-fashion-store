@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { Skeleton } from "./skeleton";
+import { Skeleton } from "../ui/skeleton";
 
 const ProductSkeletonGrid = () => {
   return (

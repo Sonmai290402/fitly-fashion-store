@@ -4,17 +4,16 @@ import { Loader } from "lucide-react";
 import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
-import Breadcrumb from "@/components/breadcrumb";
-import { ProductReviews } from "@/components/Reviews/ProductReivew";
+import Breadcrumb from "@/components/common/Breadcrumb";
+import { ProductReviews } from "@/modules/app/ProductDetail/components/ProductReviews";
 import { useProductStore } from "@/store/productStore";
 import { ProductData } from "@/types/product.types";
 
-import ProductGallery from "./components/ProductGallery";
-import ProductInfo from "./components/ProductInfo";
+import ProductSection from "./components/ProductSection";
 
 const ProductDetail = () => {
   const [product, setProduct] = useState<ProductData | null>(null);
-  const [selectedColorIndex, setSelectedColorIndex] = useState(0);
+
   const [isLoading, setIsLoading] = useState(true);
   const { id } = useParams();
   const { fetchProductById } = useProductStore();
@@ -39,10 +38,6 @@ const ProductDetail = () => {
     }
   }, [id, fetchProductById]);
 
-  const handleColorSelect = (index: number) => {
-    setSelectedColorIndex(index);
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[70vh]">
@@ -60,19 +55,9 @@ const ProductDetail = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
-      <Breadcrumb product={product} className="mb-5" />
-      <div className="grid grid-cols-[minmax(0,1fr)_400px] gap-8 ">
-        <ProductGallery
-          product={product}
-          selectedColorIndex={selectedColorIndex}
-        />
-        <ProductInfo
-          product={product}
-          selectedColorIndex={selectedColorIndex}
-          onColorSelect={handleColorSelect}
-        />
-      </div>
+    <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-10">
+      <Breadcrumb product={product} className="mb-2 sm:mb-5 overflow-x-auto" />
+      <ProductSection product={product} />
       <ProductReviews productId={id as string} />
     </div>
   );

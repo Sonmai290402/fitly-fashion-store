@@ -1,4 +1,4 @@
-import HeadingTypo from "@/components/ui/HeadingTypo";
+import HeadingTypo from "@/components/common/HeadingTypo";
 
 import GenderList from "./GenderList";
 

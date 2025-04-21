@@ -1,6 +1,6 @@
 import React from "react";
 
-import HeadingTypo from "@/components/ui/HeadingTypo";
+import HeadingTypo from "@/components/common/HeadingTypo";
 
 import CategorySwiper from "./CategorySwiper";
 

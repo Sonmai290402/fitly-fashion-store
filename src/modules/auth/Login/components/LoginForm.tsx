@@ -17,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import HeadingTypo from "@/components/ui/HeadingTypo";
+import HeadingTypo from "@/components/common/HeadingTypo";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/authStore";
 

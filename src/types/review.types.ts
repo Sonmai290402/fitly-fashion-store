@@ -7,6 +7,14 @@ export type ProductReview = {
   productId: string;
   userId: string;
   user?: UserData;
+  product?: {
+    id: string;
+    title: string;
+    image?: string;
+    gender?: string;
+    category?: string;
+    url?: string;
+  };
   rating: number;
   title?: string;
   comment: string;

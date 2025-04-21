@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import CollectionBreadcrumb from "@/components/breadcrumb/CollectionBreadcrumb";
+import CollectionBreadcrumb from "@/components/common/CollectionBreadcrumb";
 import { useCollectionStore } from "@/store/collectionStore";
 import { ProductData } from "@/types/product.types";
 

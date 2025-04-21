@@ -1,7 +1,9 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
+  getDoc,
   getDocs,
   increment,
   limit,
@@ -15,13 +17,21 @@ import {
 } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 import { fireDB } from "@/firebase/firebaseConfig";
 import { ProductRatingSummary, ProductReview } from "@/types/review.types";
 
+import { STORAGE_KEYS, useAuthStore } from "./authStore";
+
+const DEFAULT_AVATAR_URL =
+  "https://firebasestorage.googleapis.com/v0/b/fashion-store-f3b8b.firebasestorage.app/o/default-avatar.png?alt=media&token=d5cae13a-4bb2-4eb5-8bcf-7a3960faf6ba";
+const DEFAULT_PRODUCT_IMAGE = "/images/default-product.png";
+
 interface ReviewsState {
   reviews: ProductReview[];
   productRatings: Record<string, ProductRatingSummary>;
+  userHelpfulVotes: Record<string, boolean>;
   loading: boolean;
   error: string | null;
   lastVisible: unknown;
@@ -51,598 +61,788 @@ interface ReviewsState {
     reviewId: string,
     data: Partial<ProductReview>
   ) => Promise<boolean>;
-  deleteReview: (reviewId: string) => Promise<boolean>;
-  markHelpful: (reviewId: string) => Promise<boolean>;
+  deleteReview: (reviewId: string, userId: string) => Promise<boolean>;
+  toggleHelpfulVote: (reviewId: string) => Promise<boolean>;
   checkUserReviewEligibility: (
     userId: string,
     productId: string
   ) => Promise<boolean>;
   getUserReviews: (userId: string) => Promise<ProductReview[]>;
+  loadUserHelpfulVotes: () => void;
+  fetchFeaturedReviews: (limitCount?: number) => Promise<ProductReview[]>;
+  clearUserData: () => void;
 }
 
-export const useReviewStore = create<ReviewsState>((set, get) => ({
-  reviews: [],
-  productRatings: {},
-  loading: false,
-  error: null,
-  lastVisible: null,
-  hasMore: true,
+const setupAuthListener = () => {
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEYS.AUTH_USER) {
+      const newValue = event.newValue ? JSON.parse(event.newValue) : null;
+      const hasUser = newValue && newValue.state && newValue.state.user;
 
-  fetchProductReviews: async (
-    productId,
-    sortBy = "createdAt",
-    filterBy = "all"
-  ) => {
-    set({ loading: true, error: null });
-
-    try {
-      let reviewQuery = query(
-        collection(fireDB, "reviews"),
-        where("productId", "==", productId),
-        where("status", "==", "approved")
-      );
-
-      // Apply sorting
-      if (sortBy === "recent") {
-        reviewQuery = query(reviewQuery, orderBy("createdAt", "desc"));
-      } else if (sortBy === "helpful") {
-        reviewQuery = query(reviewQuery, orderBy("helpfulVotes", "desc"));
-      } else if (sortBy === "highest") {
-        reviewQuery = query(reviewQuery, orderBy("rating", "desc"));
-      } else if (sortBy === "lowest") {
-        reviewQuery = query(reviewQuery, orderBy("rating", "asc"));
+      if (!hasUser) {
+        useReviewStore.getState().clearUserData();
       }
+    }
+  };
 
-      // Apply rating filter
-      if (filterBy !== "all" && !isNaN(parseInt(filterBy))) {
-        reviewQuery = query(
-          reviewQuery,
-          where("rating", "==", parseInt(filterBy))
-        );
-      }
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", handleStorageChange);
+  }
+};
 
-      reviewQuery = query(reviewQuery, limit(10));
-      const snapshot = await getDocs(reviewQuery);
+export const useReviewStore = create<ReviewsState>()(
+  persist(
+    (set, get) => ({
+      reviews: [],
+      userHelpfulVotes: {},
+      productRatings: {},
+      loading: false,
+      error: null,
+      lastVisible: null,
+      hasMore: true,
 
-      const reviewList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as ProductReview[];
+      loadUserHelpfulVotes: () => {
+        if (typeof window === "undefined") return;
 
-      // Process reviews and handle potentially deleted users
-      const reviewsWithUserData = await Promise.all(
-        reviewList.map(async (review) => {
-          try {
-            const userDoc = await getDocs(
-              query(
-                collection(fireDB, "users"),
-                where("uid", "==", review.userId)
-              )
-            );
-
-            if (!userDoc.empty) {
-              // User exists, include user data with the review
-              const userData = userDoc.docs[0].data();
-              return {
-                ...review,
-                user: {
-                  uid: userData.uid,
-                  username: userData.username || "User",
-                  email: userData.email || "",
-                  avatar: userData.avatar || "",
-                },
-                userExists: true,
-              };
-            } else {
-              return {
-                ...review,
-                user: {
-                  uid: review.userId,
-                  username: "Deleted User",
-                  email: "",
-                  avatar:
-                    "https://firebasestorage.googleapis.com/v0/b/fashion-store-f3b8b.firebasestorage.app/o/default-avatar.png?alt=media&token=d5cae13a-4bb2-4eb5-8bcf-7a3960faf6ba",
-                },
-                userExists: false,
-              };
-            }
-          } catch (error) {
-            console.error(
-              `Error fetching user data for review ${review.id}:`,
-              error
-            );
-            return {
-              ...review,
-              user: {
-                uid: review.userId,
-                username: "Unknown User",
-                email: "",
-                avatar:
-                  "https://firebasestorage.googleapis.com/v0/b/fashion-store-f3b8b.firebasestorage.app/o/default-avatar.png?alt=media&token=d5cae13a-4bb2-4eb5-8bcf-7a3960faf6ba",
-              },
-              userExists: false,
-              userError: true,
-            };
+        try {
+          const storedVotes = localStorage.getItem(STORAGE_KEYS.REVIEW_VOTES);
+          if (storedVotes) {
+            set({ userHelpfulVotes: JSON.parse(storedVotes) });
           }
-        })
-      );
-
-      set({
-        reviews: reviewsWithUserData,
-        loading: false,
-        lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
-        hasMore: snapshot.docs.length === 10,
-      });
-
-      return reviewsWithUserData;
-    } catch (error) {
-      console.error("Error fetching reviews:", error);
-      set({
-        error: (error as Error).message,
-        loading: false,
-      });
-      return [];
-    }
-  },
-
-  fetchMoreReviews: async (productId, sortBy = "recent", filterBy = "all") => {
-    const { lastVisible, reviews, hasMore } = get();
-
-    if (!hasMore || !lastVisible) return reviews;
-
-    set({ loading: true, error: null });
-
-    try {
-      let reviewQuery = query(
-        collection(fireDB, "reviews"),
-        where("productId", "==", productId),
-        where("status", "==", "approved")
-      );
-
-      if (sortBy === "recent") {
-        reviewQuery = query(reviewQuery, orderBy("createdAt", "desc"));
-      } else if (sortBy === "helpful") {
-        reviewQuery = query(reviewQuery, orderBy("helpfulVotes", "desc"));
-      } else if (sortBy === "highest") {
-        reviewQuery = query(reviewQuery, orderBy("rating", "desc"));
-      } else if (sortBy === "lowest") {
-        reviewQuery = query(reviewQuery, orderBy("rating", "asc"));
-      }
-
-      if (filterBy !== "all" && !isNaN(parseInt(filterBy))) {
-        reviewQuery = query(
-          reviewQuery,
-          where("rating", "==", parseInt(filterBy))
-        );
-      }
-
-      reviewQuery = query(reviewQuery, startAfter(lastVisible), limit(10));
-
-      const snapshot = await getDocs(reviewQuery);
-
-      const newReviews = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as ProductReview[];
-
-      const reviewsWithUserData = await Promise.all(
-        newReviews.map(async (review) => {
-          try {
-            const userDoc = await getDocs(
-              query(
-                collection(fireDB, "users"),
-                where("uid", "==", review.userId)
-              )
-            );
-
-            if (!userDoc.empty) {
-              // User exists
-              const userData = userDoc.docs[0].data();
-              return {
-                ...review,
-                user: {
-                  uid: userData.uid,
-                  username: userData.username || "User",
-                  email: userData.email || "",
-                  avatar: userData.avatar || "",
-                },
-                userExists: true,
-              };
-            } else {
-              // User was deleted
-              return {
-                ...review,
-                user: {
-                  uid: review.userId,
-                  username: "Deleted User",
-                  email: "",
-                  avatar: "/images/default-avatar.png",
-                },
-                userExists: false,
-              };
-            }
-          } catch (error) {
-            console.error(
-              `Error fetching user data for review ${review.id}:`,
-              error
-            );
-            return {
-              ...review,
-              user: {
-                uid: review.userId,
-                username: "Unknown User",
-                email: "",
-                avatar: "/images/default-avatar.png",
-              },
-              userExists: false,
-              userError: true,
-            };
-          }
-        })
-      );
-
-      set({
-        reviews: [...reviews, ...reviewsWithUserData],
-        loading: false,
-        lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
-        hasMore: snapshot.docs.length === 10,
-      });
-
-      return [...reviews, ...reviewsWithUserData];
-    } catch (error) {
-      console.error("Error fetching more reviews:", error);
-      set({
-        error: (error as Error).message,
-        loading: false,
-      });
-      return reviews;
-    }
-  },
-
-  fetchProductRatingSummary: async (productId) => {
-    set({ loading: true, error: null });
-
-    try {
-      const productDoc = await getDocs(
-        query(collection(fireDB, "products"), where("id", "==", productId))
-      );
-
-      if (productDoc.empty) {
-        set({ loading: false, error: "Product not found" });
-        return null;
-      }
-
-      const productData = productDoc.docs[0].data();
-
-      const summary: ProductRatingSummary = {
-        averageRating: productData.averageRating || 0,
-        totalReviews: productData.totalReviews || 0,
-        ratingDistribution: productData.ratingDistribution || {
-          5: 0,
-          4: 0,
-          3: 0,
-          2: 0,
-          1: 0,
-        },
-      };
-
-      set({
-        productRatings: {
-          ...get().productRatings,
-          [productId]: summary,
-        },
-        loading: false,
-      });
-
-      return summary;
-    } catch (error) {
-      console.error("Error fetching product rating summary:", error);
-      set({
-        error: (error as Error).message,
-        loading: false,
-      });
-      return null;
-    }
-  },
-
-  addReview: async (reviewData, imageUrls = []) => {
-    set({ loading: true, error: null });
-
-    try {
-      const existingReview = await getDocs(
-        query(
-          collection(fireDB, "reviews"),
-          where("productId", "==", reviewData.productId),
-          where("userId", "==", reviewData.userId)
-        )
-      );
-
-      if (!existingReview.empty) {
-        toast.error("You have already reviewed this product");
-        set({ loading: false });
-        return null;
-      }
-
-      const newReview = await addDoc(collection(fireDB, "reviews"), {
-        ...reviewData,
-        images: imageUrls, // These are already URLs
-        helpfulVotes: 0,
-        reportCount: 0,
-        status: "pending",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      await runTransaction(fireDB, async (transaction) => {
-        const productRef = doc(fireDB, "products", reviewData.productId);
-        const productDoc = await transaction.get(productRef);
-
-        if (!productDoc.exists()) {
-          throw new Error("Product not found");
+        } catch (error) {
+          console.error("Error loading user votes from localStorage:", error);
         }
+      },
 
-        const productData = productDoc.data();
-        const rating = reviewData.rating as number;
+      fetchProductReviews: async (
+        productId,
+        sortBy = "createdAt",
+        filterBy = "all"
+      ) => {
+        set({ loading: true, error: null });
 
-        const currentTotal = productData.totalReviews || 0;
-        const currentAvg = productData.averageRating || 0;
-        const distribution = productData.ratingDistribution || {
-          5: 0,
-          4: 0,
-          3: 0,
-          2: 0,
-          1: 0,
-        };
+        try {
+          let reviewQuery = query(
+            collection(fireDB, "reviews"),
+            where("productId", "==", productId),
+            where("status", "==", "approved")
+          );
 
-        const newTotal = currentTotal + 1;
-        const newAvg = (currentAvg * currentTotal + rating) / newTotal;
+          // Apply sorting
+          if (sortBy === "recent") {
+            reviewQuery = query(reviewQuery, orderBy("createdAt", "desc"));
+          } else if (sortBy === "helpful") {
+            reviewQuery = query(reviewQuery, orderBy("helpfulVotes", "desc"));
+          } else if (sortBy === "highest") {
+            reviewQuery = query(reviewQuery, orderBy("rating", "desc"));
+          } else if (sortBy === "lowest") {
+            reviewQuery = query(reviewQuery, orderBy("rating", "asc"));
+          }
 
-        distribution[rating as keyof typeof distribution] += 1;
+          // Apply rating filter
+          if (filterBy !== "all" && !isNaN(parseInt(filterBy))) {
+            reviewQuery = query(
+              reviewQuery,
+              where("rating", "==", parseInt(filterBy))
+            );
+          }
 
-        transaction.update(productRef, {
-          totalReviews: newTotal,
-          averageRating: newAvg,
-          ratingDistribution: distribution,
-        });
-      });
+          reviewQuery = query(reviewQuery, limit(10));
+          const snapshot = await getDocs(reviewQuery);
 
-      const userRef = doc(fireDB, "users", reviewData.userId);
-      await updateDoc(userRef, {
-        reviewCount: increment(1),
-        lastReviewDate: serverTimestamp(),
-      });
+          const reviewList = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as ProductReview[];
 
-      toast.success("Your review has been submitted for moderation");
-      set({ loading: false });
+          // Process reviews and handle potentially deleted users
+          const reviewsWithUserData = await Promise.all(
+            reviewList.map(async (review) => {
+              try {
+                const userDoc = await getDocs(
+                  query(
+                    collection(fireDB, "users"),
+                    where("uid", "==", review.userId)
+                  )
+                );
 
-      return newReview.id;
-    } catch (error) {
-      console.error("Error adding review:", error);
-      set({
-        error: (error as Error).message,
-        loading: false,
-      });
-      toast.error("Failed to submit your review. Please try again.");
-      return null;
-    }
-  },
-
-  updateReview: async (reviewId, data) => {
-    set({ loading: true, error: null });
-
-    try {
-      await updateDoc(doc(fireDB, "reviews", reviewId), {
-        ...data,
-        updatedAt: serverTimestamp(),
-      });
-
-      if (data.rating !== undefined) {
-        const reviewDoc = await getDocs(
-          query(collection(fireDB, "reviews"), where("id", "==", reviewId))
-        );
-
-        if (!reviewDoc.empty) {
-          const reviewData = reviewDoc.docs[0].data();
-          const oldRating = reviewData.rating;
-          const newRating = data.rating;
-
-          if (oldRating !== newRating) {
-            await runTransaction(fireDB, async (transaction) => {
-              const productRef = doc(fireDB, "products", reviewData.productId);
-              const productDoc = await transaction.get(productRef);
-
-              if (!productDoc.exists()) {
-                throw new Error("Product not found");
+                if (!userDoc.empty) {
+                  // User exists, include user data with the review
+                  const userData = userDoc.docs[0].data();
+                  return {
+                    ...review,
+                    user: {
+                      uid: userData.uid,
+                      username: userData.username || "User",
+                      email: userData.email || "",
+                      avatar: userData.avatar || DEFAULT_AVATAR_URL,
+                    },
+                    userExists: true,
+                  };
+                } else {
+                  return {
+                    ...review,
+                    user: {
+                      uid: review.userId,
+                      username: "Deleted User",
+                      email: "",
+                      avatar: DEFAULT_AVATAR_URL,
+                    },
+                    userExists: false,
+                  };
+                }
+              } catch (error) {
+                console.error(
+                  `Error fetching user data for review ${review.id}:`,
+                  error
+                );
+                return {
+                  ...review,
+                  user: {
+                    uid: review.userId,
+                    username: "Unknown User",
+                    email: "",
+                    avatar: DEFAULT_AVATAR_URL,
+                  },
+                  userExists: false,
+                  userError: true,
+                };
               }
+            })
+          );
 
-              const productData = productDoc.data();
+          set({
+            reviews: reviewsWithUserData,
+            loading: false,
+            lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+            hasMore: snapshot.docs.length === 10,
+          });
 
-              const totalReviews = productData.totalReviews || 0;
-              const currentAvg = productData.averageRating || 0;
-              const distribution = productData.ratingDistribution || {
-                5: 0,
-                4: 0,
-                3: 0,
-                2: 0,
-                1: 0,
-              };
+          return reviewsWithUserData;
+        } catch (error) {
+          console.error("Error fetching reviews:", error);
+          set({
+            error: (error as Error).message,
+            loading: false,
+          });
+          return [];
+        }
+      },
 
-              const totalPoints = currentAvg * totalReviews;
-              const newTotalPoints = totalPoints - oldRating + newRating;
-              const newAvg = newTotalPoints / totalReviews;
+      fetchMoreReviews: async (
+        productId,
+        sortBy = "recent",
+        filterBy = "all"
+      ) => {
+        const { lastVisible, reviews, hasMore } = get();
 
-              distribution[oldRating as keyof typeof distribution] -= 1;
-              distribution[newRating as keyof typeof distribution] += 1;
+        if (!hasMore || !lastVisible) return reviews;
 
-              transaction.update(productRef, {
-                averageRating: newAvg,
-                ratingDistribution: distribution,
-              });
-            });
+        set({ loading: true, error: null });
+
+        try {
+          let reviewQuery = query(
+            collection(fireDB, "reviews"),
+            where("productId", "==", productId),
+            where("status", "==", "approved")
+          );
+
+          if (sortBy === "recent") {
+            reviewQuery = query(reviewQuery, orderBy("createdAt", "desc"));
+          } else if (sortBy === "helpful") {
+            reviewQuery = query(reviewQuery, orderBy("helpfulVotes", "desc"));
+          } else if (sortBy === "highest") {
+            reviewQuery = query(reviewQuery, orderBy("rating", "desc"));
+          } else if (sortBy === "lowest") {
+            reviewQuery = query(reviewQuery, orderBy("rating", "asc"));
           }
+
+          if (filterBy !== "all" && !isNaN(parseInt(filterBy))) {
+            reviewQuery = query(
+              reviewQuery,
+              where("rating", "==", parseInt(filterBy))
+            );
+          }
+
+          reviewQuery = query(reviewQuery, startAfter(lastVisible), limit(10));
+
+          const snapshot = await getDocs(reviewQuery);
+
+          const newReviews = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as ProductReview[];
+
+          const reviewsWithUserData = await Promise.all(
+            newReviews.map(async (review) => {
+              try {
+                const userDoc = await getDocs(
+                  query(
+                    collection(fireDB, "users"),
+                    where("uid", "==", review.userId)
+                  )
+                );
+
+                if (!userDoc.empty) {
+                  // User exists
+                  const userData = userDoc.docs[0].data();
+                  return {
+                    ...review,
+                    user: {
+                      uid: userData.uid,
+                      username: userData.username || "User",
+                      email: userData.email || "",
+                      avatar: userData.avatar || DEFAULT_AVATAR_URL,
+                    },
+                    userExists: true,
+                  };
+                } else {
+                  // User was deleted
+                  return {
+                    ...review,
+                    user: {
+                      uid: review.userId,
+                      username: "Deleted User",
+                      email: "",
+                      avatar: DEFAULT_AVATAR_URL,
+                    },
+                    userExists: false,
+                  };
+                }
+              } catch (error) {
+                console.error(
+                  `Error fetching user data for review ${review.id}:`,
+                  error
+                );
+                return {
+                  ...review,
+                  user: {
+                    uid: review.userId,
+                    username: "Unknown User",
+                    email: "",
+                    avatar: DEFAULT_AVATAR_URL,
+                  },
+                  userExists: false,
+                  userError: true,
+                };
+              }
+            })
+          );
+
+          set({
+            reviews: [...reviews, ...reviewsWithUserData],
+            loading: false,
+            lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+            hasMore: snapshot.docs.length === 10,
+          });
+
+          return [...reviews, ...reviewsWithUserData];
+        } catch (error) {
+          console.error("Error fetching more reviews:", error);
+          set({
+            error: (error as Error).message,
+            loading: false,
+          });
+          return reviews;
         }
-      }
+      },
 
-      toast.success("Review updated successfully");
-      set({ loading: false });
+      fetchProductRatingSummary: async (productId) => {
+        set({ loading: true, error: null });
 
-      return true;
-    } catch (error) {
-      console.error("Error updating review:", error);
-      set({
-        error: (error as Error).message,
-        loading: false,
-      });
-      toast.error("Failed to update review. Please try again.");
-      return false;
-    }
-  },
+        try {
+          const docRef = doc(fireDB, "products", productId);
+          const productDoc = await getDoc(docRef);
 
-  deleteReview: async (reviewId) => {
-    set({ loading: true, error: null });
+          if (!productDoc.exists()) {
+            set({ loading: false, error: "Product not found" });
+            return null;
+          }
 
-    try {
-      const reviewDoc = await getDocs(
-        query(collection(fireDB, "reviews"), where("id", "==", reviewId))
-      );
+          const productData = productDoc.data();
 
-      if (reviewDoc.empty) {
-        toast.error("Review not found");
-        set({ loading: false });
-        return false;
-      }
+          const summary: ProductRatingSummary = {
+            averageRating: productData.averageRating || 0,
+            totalReviews: productData.totalReviews || 0,
+            ratingDistribution: productData.ratingDistribution || {
+              5: 0,
+              4: 0,
+              3: 0,
+              2: 0,
+              1: 0,
+            },
+          };
 
-      const reviewData = reviewDoc.docs[0].data();
+          set({
+            productRatings: {
+              ...get().productRatings,
+              [productId]: summary,
+            },
+            loading: false,
+          });
 
-      await updateDoc(doc(fireDB, "reviews", reviewId), {
-        status: "deleted",
-        updatedAt: serverTimestamp(),
-      });
-
-      await runTransaction(fireDB, async (transaction) => {
-        const productRef = doc(fireDB, "products", reviewData.productId);
-        const productDoc = await transaction.get(productRef);
-
-        if (!productDoc.exists()) {
-          throw new Error("Product not found");
+          return summary;
+        } catch (error) {
+          console.error("Error fetching product rating summary:", error);
+          set({
+            error: (error as Error).message,
+            loading: false,
+          });
+          return null;
         }
+      },
 
-        const productData = productDoc.data();
-        const rating = reviewData.rating as number;
+      addReview: async (reviewData, imageUrls = []) => {
+        set({ loading: true, error: null });
 
-        const currentTotal = productData.totalReviews || 0;
-        const currentAvg = productData.averageRating || 0;
-        const distribution = productData.ratingDistribution || {
-          5: 0,
-          4: 0,
-          3: 0,
-          2: 0,
-          1: 0,
-        };
+        try {
+          const existingReview = await getDocs(
+            query(
+              collection(fireDB, "reviews"),
+              where("productId", "==", reviewData.productId),
+              where("userId", "==", reviewData.userId)
+            )
+          );
 
-        if (currentTotal === 0) {
-          return;
+          if (!existingReview.empty) {
+            toast.error("You have already reviewed this product");
+            set({ loading: false });
+            return null;
+          }
+
+          const newReview = await addDoc(collection(fireDB, "reviews"), {
+            ...reviewData,
+            images: imageUrls, // These are already URLs
+            helpfulVotes: 0,
+            reportCount: 0,
+            status: "pending",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+
+          await runTransaction(fireDB, async (transaction) => {
+            const productRef = doc(fireDB, "products", reviewData.productId);
+            const productDoc = await transaction.get(productRef);
+
+            if (!productDoc.exists()) {
+              throw new Error("Product not found");
+            }
+
+            const productData = productDoc.data();
+            const rating = reviewData.rating as number;
+
+            const currentTotal = productData.totalReviews || 0;
+            const currentAvg = productData.averageRating || 0;
+            const distribution = productData.ratingDistribution || {
+              5: 0,
+              4: 0,
+              3: 0,
+              2: 0,
+              1: 0,
+            };
+
+            const newTotal = currentTotal + 1;
+            const newAvg = (currentAvg * currentTotal + rating) / newTotal;
+
+            distribution[rating as keyof typeof distribution] += 1;
+
+            transaction.update(productRef, {
+              totalReviews: newTotal,
+              averageRating: newAvg,
+              ratingDistribution: distribution,
+            });
+          });
+
+          const userRef = doc(fireDB, "users", reviewData.userId);
+          await updateDoc(userRef, {
+            reviewCount: increment(1),
+            lastReviewDate: serverTimestamp(),
+          });
+
+          toast.success("Your review has been submitted for moderation");
+          set({ loading: false });
+
+          return newReview.id;
+        } catch (error) {
+          console.error("Error adding review:", error);
+          set({
+            error: (error as Error).message,
+            loading: false,
+          });
+          toast.error("Failed to submit your review. Please try again.");
+          return null;
         }
+      },
 
-        const newTotal = currentTotal - 1;
-        const newAvg =
-          newTotal === 0 ? 0 : (currentAvg * currentTotal - rating) / newTotal;
+      updateReview: async (reviewId, data) => {
+        set({ loading: true, error: null });
 
-        distribution[rating as keyof typeof distribution] = Math.max(
-          0,
-          distribution[rating as keyof typeof distribution] - 1
-        );
+        try {
+          await updateDoc(doc(fireDB, "reviews", reviewId), {
+            ...data,
+            updatedAt: serverTimestamp(),
+          });
 
-        transaction.update(productRef, {
-          totalReviews: newTotal,
-          averageRating: newAvg,
-          ratingDistribution: distribution,
-        });
-      });
+          if (data.rating !== undefined) {
+            const reviewDoc = await getDoc(doc(fireDB, "reviews", reviewId));
 
-      const userRef = doc(fireDB, "users", reviewData.userId);
-      await updateDoc(userRef, {
-        reviewCount: increment(-1),
-      });
+            if (reviewDoc.exists()) {
+              const reviewData = reviewDoc.data();
+              const oldRating = reviewData.rating;
+              const newRating = data.rating;
 
-      toast.success("Review deleted successfully");
-      set({ loading: false });
+              if (oldRating !== newRating) {
+                await runTransaction(fireDB, async (transaction) => {
+                  const productRef = doc(
+                    fireDB,
+                    "products",
+                    reviewData.productId
+                  );
+                  const productDoc = await transaction.get(productRef);
 
-      return true;
-    } catch (error) {
-      console.error("Error deleting review:", error);
-      set({
-        error: (error as Error).message,
-        loading: false,
-      });
-      toast.error("Failed to delete review. Please try again.");
-      return false;
+                  if (!productDoc.exists()) {
+                    throw new Error("Product not found");
+                  }
+
+                  const productData = productDoc.data();
+
+                  const totalReviews = productData.totalReviews || 0;
+                  const currentAvg = productData.averageRating || 0;
+                  const distribution = productData.ratingDistribution || {
+                    5: 0,
+                    4: 0,
+                    3: 0,
+                    2: 0,
+                    1: 0,
+                  };
+
+                  const totalPoints = currentAvg * totalReviews;
+                  const newTotalPoints = totalPoints - oldRating + newRating;
+                  const newAvg = newTotalPoints / totalReviews;
+
+                  distribution[oldRating as keyof typeof distribution] -= 1;
+                  distribution[newRating as keyof typeof distribution] += 1;
+
+                  transaction.update(productRef, {
+                    averageRating: newAvg,
+                    ratingDistribution: distribution,
+                  });
+                });
+              }
+            }
+          }
+
+          toast.success("Review updated successfully");
+          set({ loading: false });
+
+          return true;
+        } catch (error) {
+          console.error("Error updating review:", error);
+          set({
+            error: (error as Error).message,
+            loading: false,
+          });
+          toast.error("Failed to update review. Please try again.");
+          return false;
+        }
+      },
+
+      deleteReview: async (reviewId, userId) => {
+        set({ loading: true, error: null });
+
+        try {
+          const reviewRef = doc(fireDB, "reviews", reviewId);
+          const reviewSnap = await getDoc(reviewRef);
+
+          if (!reviewSnap.exists()) {
+            toast.error("Review not found");
+            set({ loading: false });
+            return false;
+          }
+
+          const reviewData = reviewSnap.data();
+
+          if (reviewData.userId !== userId) {
+            toast.error("You can only delete your own reviews");
+            set({ loading: false });
+            return false;
+          }
+
+          await deleteDoc(reviewRef);
+
+          await runTransaction(fireDB, async (transaction) => {
+            const productRef = doc(fireDB, "products", reviewData.productId);
+            const productDoc = await transaction.get(productRef);
+
+            if (!productDoc.exists()) {
+              throw new Error("Product not found");
+            }
+
+            const productData = productDoc.data();
+            const rating = reviewData.rating as number;
+
+            const currentTotal = productData.totalReviews || 0;
+            const currentAvg = productData.averageRating || 0;
+            const distribution = productData.ratingDistribution || {
+              5: 0,
+              4: 0,
+              3: 0,
+              2: 0,
+              1: 0,
+            };
+
+            if (currentTotal === 0) {
+              return;
+            }
+
+            const newTotal = currentTotal - 1;
+            const newAvg =
+              newTotal === 0
+                ? 0
+                : (currentAvg * currentTotal - rating) / newTotal;
+
+            distribution[rating as keyof typeof distribution] = Math.max(
+              0,
+              distribution[rating as keyof typeof distribution] - 1
+            );
+
+            transaction.update(productRef, {
+              totalReviews: newTotal,
+              averageRating: newAvg,
+              ratingDistribution: distribution,
+            });
+          });
+
+          // Update user's review count
+          const userRef = doc(fireDB, "users", reviewData.userId);
+          await updateDoc(userRef, {
+            reviewCount: increment(-1),
+          });
+
+          // Update local state
+          set((state) => ({
+            reviews: state.reviews.filter((review) => review.id !== reviewId),
+            loading: false,
+          }));
+
+          toast.success("Review deleted successfully");
+          return true;
+        } catch (error) {
+          console.error("Error deleting review:", error);
+          set({
+            error: (error as Error).message,
+            loading: false,
+          });
+          toast.error("Failed to delete review. Please try again.");
+          return false;
+        }
+      },
+
+      toggleHelpfulVote: async (reviewId) => {
+        const currentUser = useAuthStore.getState().user;
+        if (!currentUser) {
+          toast.error("Please login to vote");
+          return false;
+        }
+        const { userHelpfulVotes } = get();
+        const hasVoted = userHelpfulVotes[reviewId];
+
+        // Optimistic update
+        set((state) => ({
+          userHelpfulVotes: {
+            ...state.userHelpfulVotes,
+            [reviewId]: !hasVoted,
+          },
+          reviews: state.reviews.map((review) =>
+            review.id === reviewId
+              ? {
+                  ...review,
+                  helpfulVotes:
+                    (review.helpfulVotes || 0) + (hasVoted ? -1 : 1),
+                }
+              : review
+          ),
+        }));
+
+        try {
+          await updateDoc(doc(fireDB, "reviews", reviewId), {
+            helpfulVotes: increment(hasVoted ? -1 : 1),
+          });
+
+          return true;
+        } catch (error) {
+          console.error("Error toggling helpful vote:", error);
+
+          // Revert optimistic update on error
+          set((state) => ({
+            userHelpfulVotes: {
+              ...state.userHelpfulVotes,
+              [reviewId]: hasVoted,
+            },
+            reviews: state.reviews.map((review) =>
+              review.id === reviewId
+                ? {
+                    ...review,
+                    helpfulVotes:
+                      (review.helpfulVotes || 0) + (hasVoted ? 1 : -1),
+                  }
+                : review
+            ),
+            error: (error as Error).message,
+          }));
+
+          return false;
+        }
+      },
+
+      checkUserReviewEligibility: async (userId, productId) => {
+        try {
+          const existingReview = await getDocs(
+            query(
+              collection(fireDB, "reviews"),
+              where("productId", "==", productId),
+              where("userId", "==", userId)
+            )
+          );
+
+          return existingReview.empty;
+        } catch (error) {
+          console.error("Error checking user review eligibility:", error);
+          return false;
+        }
+      },
+
+      getUserReviews: async (userId) => {
+        set({ loading: true, error: null });
+
+        try {
+          const userReviewsQuery = query(
+            collection(fireDB, "reviews"),
+            where("userId", "==", userId),
+            orderBy("createdAt", "desc")
+          );
+
+          const snapshot = await getDocs(userReviewsQuery);
+
+          const reviewList = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as ProductReview[];
+
+          set({ loading: false });
+          return reviewList;
+        } catch (error) {
+          console.error("Error fetching user reviews:", error);
+          set({
+            error: (error as Error).message,
+            loading: false,
+          });
+          return [];
+        }
+      },
+
+      fetchFeaturedReviews: async (limitCount = 5) => {
+        set({ loading: true, error: null });
+
+        try {
+          const reviewQuery = query(
+            collection(fireDB, "reviews"),
+            where("status", "==", "approved"),
+            where("rating", "==", 5),
+            orderBy("helpfulVotes", "desc"),
+            limit(limitCount)
+          );
+
+          const snapshot = await getDocs(reviewQuery);
+
+          const reviewList = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as ProductReview[];
+
+          const featuredReviews = await Promise.all(
+            reviewList.map(async (review) => {
+              try {
+                const [userSnap, productSnap] = await Promise.allSettled([
+                  getDoc(doc(fireDB, "users", review.userId)),
+                  getDoc(doc(fireDB, "products", review.productId)),
+                ]);
+
+                if (
+                  userSnap.status !== "fulfilled" ||
+                  productSnap.status !== "fulfilled" ||
+                  !userSnap.value.exists() ||
+                  !productSnap.value.exists()
+                ) {
+                  return false;
+                }
+
+                const userData = userSnap.value.data();
+                const productData = productSnap.value.data();
+
+                return {
+                  ...review,
+                  user: {
+                    uid: userData.uid,
+                    username: userData.username || "User",
+                    email: userData.email || "",
+                    avatar: userData.avatar || DEFAULT_AVATAR_URL,
+                  },
+                  product: {
+                    id: review.productId,
+                    title: productData.title,
+                    image: productData.image || DEFAULT_PRODUCT_IMAGE,
+                    url: `/${productData.gender}/${productData.category}/${review.productId}`,
+                  },
+                };
+              } catch (error) {
+                console.error(`Error processing review ${review.id}:`, error);
+                return false;
+              }
+            })
+          );
+
+          const completeReviews = featuredReviews.filter(
+            (review): review is Exclude<typeof review, false> =>
+              !!review &&
+              typeof review === "object" &&
+              "user" in review &&
+              "product" in review
+          );
+
+          set({ loading: false });
+          return completeReviews;
+        } catch (error) {
+          console.error("Error fetching featured reviews:", error);
+          set({
+            error: (error as Error).message,
+            loading: false,
+          });
+          return [];
+        }
+      },
+
+      clearUserData: () => {
+        set({ userHelpfulVotes: {} });
+      },
+    }),
+    {
+      name: STORAGE_KEYS.REVIEW_VOTES,
+      partialize: (state) => ({ userHelpfulVotes: state.userHelpfulVotes }),
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined"
+          ? localStorage
+          : {
+              getItem: () => null,
+              setItem: () => {},
+              removeItem: () => {},
+            }
+      ),
     }
-  },
+  )
+);
 
-  markHelpful: async (reviewId) => {
-    set({ loading: true, error: null });
-
-    try {
-      await updateDoc(doc(fireDB, "reviews", reviewId), {
-        helpfulVotes: increment(1),
-      });
-
-      set({ loading: false });
-      return true;
-    } catch (error) {
-      console.error("Error marking review as helpful:", error);
-      set({
-        error: (error as Error).message,
-        loading: false,
-      });
-      return false;
-    }
-  },
-
-  checkUserReviewEligibility: async (userId, productId) => {
-    try {
-      const existingReview = await getDocs(
-        query(
-          collection(fireDB, "reviews"),
-          where("productId", "==", productId),
-          where("userId", "==", userId)
-        )
-      );
-
-      return existingReview.empty;
-    } catch (error) {
-      console.error("Error checking user review eligibility:", error);
-      return false;
-    }
-  },
-
-  getUserReviews: async (userId) => {
-    set({ loading: true, error: null });
-
-    try {
-      const userReviewsQuery = query(
-        collection(fireDB, "reviews"),
-        where("userId", "==", userId),
-        orderBy("createdAt", "desc")
-      );
-
-      const snapshot = await getDocs(userReviewsQuery);
-
-      const reviewList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as ProductReview[];
-
-      set({ loading: false });
-      return reviewList;
-    } catch (error) {
-      console.error("Error fetching user reviews:", error);
-      set({
-        error: (error as Error).message,
-        loading: false,
-      });
-      return [];
-    }
-  },
-}));
+// Setup storage event listener after store creation
+if (typeof window !== "undefined") {
+  setupAuthListener();
+}
