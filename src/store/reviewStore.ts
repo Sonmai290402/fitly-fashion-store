@@ -19,10 +19,11 @@ import { toast } from "react-hot-toast";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { STORAGE_KEYS } from "@/constants";
 import { fireDB } from "@/firebase/firebaseConfig";
 import { ProductRatingSummary, ProductReview } from "@/types/review.types";
 
-import { STORAGE_KEYS, useAuthStore } from "./authStore";
+import { useAuthStore } from "./authStore";
 
 const DEFAULT_AVATAR_URL =
   "https://firebasestorage.googleapis.com/v0/b/fashion-store-f3b8b.firebasestorage.app/o/default-avatar.png?alt=media&token=d5cae13a-4bb2-4eb5-8bcf-7a3960faf6ba";
@@ -32,10 +33,12 @@ interface ReviewsState {
   reviews: ProductReview[];
   productRatings: Record<string, ProductRatingSummary>;
   userHelpfulVotes: Record<string, boolean>;
+  userHelpfulVotesMap: Record<string, Record<string, boolean>>; // Map of userID -> {reviewID: voted}
   loading: boolean;
   error: string | null;
   lastVisible: unknown;
   hasMore: boolean;
+  currentUserId: string | null;
 
   fetchProductReviews: (
     productId: string,
@@ -71,17 +74,14 @@ interface ReviewsState {
   loadUserHelpfulVotes: () => void;
   fetchFeaturedReviews: (limitCount?: number) => Promise<ProductReview[]>;
   clearUserData: () => void;
+  syncUserContext: () => void;
 }
 
+// Set up auth listener for user changes
 const setupAuthListener = () => {
   const handleStorageChange = (event: StorageEvent) => {
     if (event.key === STORAGE_KEYS.AUTH_USER) {
-      const newValue = event.newValue ? JSON.parse(event.newValue) : null;
-      const hasUser = newValue && newValue.state && newValue.state.user;
-
-      if (!hasUser) {
-        useReviewStore.getState().clearUserData();
-      }
+      useReviewStore.getState().syncUserContext();
     }
   };
 
@@ -95,23 +95,50 @@ export const useReviewStore = create<ReviewsState>()(
     (set, get) => ({
       reviews: [],
       userHelpfulVotes: {},
+      userHelpfulVotesMap: {}, // Store votes by user ID
       productRatings: {},
       loading: false,
       error: null,
       lastVisible: null,
       hasMore: true,
+      currentUserId: null,
+
+      // Sync user context when auth state changes
+      syncUserContext: () => {
+        const currentUser = useAuthStore.getState().user;
+        const userId = currentUser?.uid || null;
+        const { userHelpfulVotesMap } = get();
+
+        if (userId) {
+          // User logged in - load their votes
+          set({
+            currentUserId: userId,
+            userHelpfulVotes: userHelpfulVotesMap[userId] || {},
+          });
+        } else {
+          // User logged out - clear active votes
+          set({
+            currentUserId: null,
+            userHelpfulVotes: {},
+          });
+        }
+      },
 
       loadUserHelpfulVotes: () => {
         if (typeof window === "undefined") return;
 
-        try {
-          const storedVotes = localStorage.getItem(STORAGE_KEYS.REVIEW_VOTES);
-          if (storedVotes) {
-            set({ userHelpfulVotes: JSON.parse(storedVotes) });
-          }
-        } catch (error) {
-          console.error("Error loading user votes from localStorage:", error);
+        const currentUser = useAuthStore.getState().user;
+        if (!currentUser) {
+          set({ userHelpfulVotes: {} });
+          return;
         }
+
+        // Set current user ID and load their votes
+        const { userHelpfulVotesMap } = get();
+        set({
+          currentUserId: currentUser.uid,
+          userHelpfulVotes: userHelpfulVotesMap[currentUser.uid] || {},
+        });
       },
 
       fetchProductReviews: async (
@@ -644,15 +671,30 @@ export const useReviewStore = create<ReviewsState>()(
           toast.error("Please login to vote");
           return false;
         }
-        const { userHelpfulVotes } = get();
+
+        const { userHelpfulVotes, userHelpfulVotesMap, currentUserId } = get();
+        if (!currentUserId || currentUserId !== currentUser.uid) {
+          // Ensure current user is set properly
+          set({ currentUserId: currentUser.uid });
+        }
+
         const hasVoted = userHelpfulVotes[reviewId];
 
-        // Optimistic update
+        // Optimistic update for current user
+        const updatedUserVotes = {
+          ...userHelpfulVotes,
+          [reviewId]: !hasVoted,
+        };
+
+        // Update the user votes map with the current user's votes
+        const updatedVotesMap = {
+          ...userHelpfulVotesMap,
+          [currentUser.uid]: updatedUserVotes,
+        };
+
         set((state) => ({
-          userHelpfulVotes: {
-            ...state.userHelpfulVotes,
-            [reviewId]: !hasVoted,
-          },
+          userHelpfulVotes: updatedUserVotes,
+          userHelpfulVotesMap: updatedVotesMap,
           reviews: state.reviews.map((review) =>
             review.id === reviewId
               ? {
@@ -674,11 +716,19 @@ export const useReviewStore = create<ReviewsState>()(
           console.error("Error toggling helpful vote:", error);
 
           // Revert optimistic update on error
+          const revertedUserVotes = {
+            ...userHelpfulVotes,
+            [reviewId]: hasVoted,
+          };
+
+          const revertedVotesMap = {
+            ...userHelpfulVotesMap,
+            [currentUser.uid]: revertedUserVotes,
+          };
+
           set((state) => ({
-            userHelpfulVotes: {
-              ...state.userHelpfulVotes,
-              [reviewId]: hasVoted,
-            },
+            userHelpfulVotes: revertedUserVotes,
+            userHelpfulVotesMap: revertedVotesMap,
             reviews: state.reviews.map((review) =>
               review.id === reviewId
                 ? {
@@ -823,12 +873,18 @@ export const useReviewStore = create<ReviewsState>()(
       },
 
       clearUserData: () => {
-        set({ userHelpfulVotes: {} });
+        set({
+          userHelpfulVotes: {},
+          currentUserId: null,
+        });
       },
     }),
     {
       name: STORAGE_KEYS.REVIEW_VOTES,
-      partialize: (state) => ({ userHelpfulVotes: state.userHelpfulVotes }),
+      partialize: (state) => ({
+        userHelpfulVotesMap: state.userHelpfulVotesMap,
+        currentUserId: state.currentUserId,
+      }),
       storage: createJSONStorage(() =>
         typeof window !== "undefined"
           ? localStorage
@@ -838,11 +894,16 @@ export const useReviewStore = create<ReviewsState>()(
               removeItem: () => {},
             }
       ),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.syncUserContext();
+        }
+      },
     }
   )
 );
 
-// Setup storage event listener after store creation
 if (typeof window !== "undefined") {
   setupAuthListener();
+  useReviewStore.getState().syncUserContext();
 }

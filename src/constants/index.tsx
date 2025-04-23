@@ -9,7 +9,6 @@ import {
   Recycle,
   Search,
   Shirt,
-  ShoppingCart,
   UserCog,
   Zap,
 } from "lucide-react";
@@ -18,11 +17,6 @@ export const headerActionItems = [
   {
     title: "Search",
     icon: <Search />,
-    url: "/",
-  },
-  {
-    title: "Cart",
-    icon: <ShoppingCart />,
     url: "/",
   },
   {
@@ -140,3 +134,10 @@ export const commonColors = [
   { name: "Blue", colorCode: "#0000FF" },
   { name: "Red", colorCode: "#FF0000" },
 ];
+
+export const STORAGE_KEYS = {
+  AUTH_USER: "auth_user_data",
+  REVIEW_VOTES: "review-store",
+  CART_ITEMS: "cart-items",
+  // RECENT_VIEWS: "recently-viewed",
+};

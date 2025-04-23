@@ -1,6 +1,7 @@
 "use client";
 
 import { ThemeProvider } from "@/components/common/theme-provider";
+import FloatingButtonsContainer from "@/components/FloatingButtons/FloatingButtonContainer";
 import Footer from "@/components/footer";
 import Header from "@/components/header";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
@@ -25,6 +26,7 @@ export default function SiteLayout({
         <Header />
         {children}
         <Footer />
+        <FloatingButtonsContainer />
       </ThemeProvider>
     </div>
   );

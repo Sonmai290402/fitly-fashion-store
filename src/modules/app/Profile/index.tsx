@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
 import { useAuthStore } from "@/store/authStore";
 
-// import OrderHistory from "./components/OrderHistory";
 import ProfileDetails from "./components/ProfileDetails";
 import ProfileEdit from "./components/ProfileEdit";
 
@@ -36,12 +35,6 @@ export default function ProfilePage() {
       id: "edit",
       label: "Edit Profile",
       component: <ProfileEdit user={user!} />,
-    },
-    {
-      id: "orders",
-      label: "Order History",
-      component: <p>Comming soon</p>,
-      // component: <OrderHistory userId={user!.uid || ""} />,
     },
     {
       id: "addresses",

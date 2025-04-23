@@ -1,4 +1,4 @@
-import { LogOut, User } from "lucide-react";
+import { LogOut, Package, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -68,12 +68,20 @@ const HeaderActions = () => {
           <DropdownMenuContent align="end" className="w-56 z-100">
             <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <Link href="/orders">
+              <DropdownMenuItem className="cursor-pointer">
+                <Package className="mr-2 h-4 w-4" />
+                <span>My Orders</span>
+              </DropdownMenuItem>
+            </Link>
+
             <Link href="/profile">
               <DropdownMenuItem className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
             </Link>
+
             <DropdownMenuItem
               className="cursor-pointer text-red-600 focus:text-red-600"
               onClick={logout}

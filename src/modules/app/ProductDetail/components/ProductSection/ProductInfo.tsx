@@ -1,10 +1,22 @@
 "use client";
 
-import { Gift, Package, Truck } from "lucide-react";
+import {
+  Gift,
+  Loader,
+  Minus,
+  Package,
+  Plus,
+  ShoppingBag,
+  ShoppingCart,
+  Truck,
+} from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useCartStore } from "@/store/cartStore";
 import { ProductData } from "@/types/product.types";
 import { formatCurrency } from "@/utils/formatCurrency";
 
@@ -20,6 +32,10 @@ const ProductInfo = ({
   onColorSelect,
 }: ProductInfoProps) => {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [addingToCart, setAddingToCart] = useState(false);
+
+  const { addItem, items } = useCartStore();
 
   const selectedColor = product.colors[selectedColorIndex];
 
@@ -47,6 +63,72 @@ const ProductInfo = ({
     );
   }, [product.price, product.sale_price]);
 
+  const mainImage = useMemo(() => {
+    if (selectedColor?.images?.length) {
+      const img = selectedColor.images[0];
+      return typeof img === "string" ? img : img?.url || "";
+    }
+    return typeof product.image === "string" ? product.image : "";
+  }, [product.image, selectedColor]);
+
+  const cartItem = useMemo(() => {
+    const itemId = `${product.id}-${selectedColor?.name || "default"}-${
+      selectedSize || "nosize"
+    }`;
+    return items.find((item) => item.id === itemId);
+  }, [items, product.id, selectedColor?.name, selectedSize]);
+
+  const handleQuantityChange = (delta: number) => {
+    setQuantity((prev) => Math.max(1, prev + delta));
+  };
+
+  const handleAddToCart = async () => {
+    if (addingToCart) return;
+
+    try {
+      setAddingToCart(true);
+
+      if (availableSizes.length > 0 && !selectedSize) {
+        toast.error("Please select a size");
+        return;
+      }
+
+      const itemId = `${product.id}-${selectedColor?.name || "default"}-${
+        selectedSize || "nosize"
+      }`;
+      const price = product.sale_price || product.price || 0;
+
+      addItem({
+        id: itemId,
+        productId: product.id || "",
+        title: product.title,
+        price,
+        image: mainImage,
+        quantity,
+        color: selectedColor?.name,
+        size: selectedSize ?? undefined,
+      });
+
+      toast.success(`${product.title} added to your cart`);
+
+      if (!cartItem) {
+        setQuantity(1);
+      }
+    } catch (error) {
+      console.error("Failed to add item to cart:", error);
+      toast.error("Failed to add item to cart");
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const buttonText = useMemo(() => {
+    if (availableSizes.length > 0 && !selectedSize) {
+      return "SELECT A SIZE";
+    }
+    return "ADD TO CART";
+  }, [availableSizes.length, selectedSize]);
+
   return (
     <div className="flex flex-col gap-4 sm:gap-5 sticky top-20 self-start">
       <div className="space-y-2">
@@ -67,9 +149,9 @@ const ProductInfo = ({
                 {formatCurrency(product.price)}
               </p>
               {discountPercentage > 0 && (
-                <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded">
+                <Badge variant="destructive" className="px-2 py-0.5">
                   -{discountPercentage}% OFF
-                </span>
+                </Badge>
               )}
             </div>
           )}
@@ -129,18 +211,69 @@ const ProductInfo = ({
         </div>
       )}
 
+      {/* Quantity selector */}
+      <div className="flex items-center gap-3">
+        <p className="font-medium">Quantity</p>
+        <div className="flex items-center border rounded">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-none"
+            onClick={() => handleQuantityChange(-1)}
+            disabled={quantity <= 1 || addingToCart}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <span className="w-10 text-center font-medium">{quantity}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-none"
+            onClick={() => handleQuantityChange(1)}
+            disabled={addingToCart}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
       {/* Add to Cart Button */}
       <Button
-        variant="default"
+        size="lg"
         className="mt-2 w-full py-5 sm:py-6 text-base sm:text-lg"
-        disabled={availableSizes.length > 0 && !selectedSize}
+        disabled={(availableSizes.length > 0 && !selectedSize) || addingToCart}
+        onClick={handleAddToCart}
       >
-        {availableSizes.length > 0 && !selectedSize
-          ? "SELECT A SIZE"
-          : "ADD TO CART"}
+        {addingToCart ? (
+          <>
+            <Loader className="mr-2 h-5 w-5 animate-spin" />
+            ADDING...
+          </>
+        ) : (
+          <>
+            <ShoppingCart className="mr-2 h-5 w-5" />
+            {buttonText}
+          </>
+        )}
       </Button>
 
-      {/* Shipping and benefits section */}
+      <Separator className="my-1" />
+      {cartItem && (
+        <div className="bg-gray-50 p-3 rounded-md mt-2">
+          <p className="text-sm text-gray-600 flex items-center">
+            <ShoppingBag className="h-4 w-4 mr-2 text-primary" />
+            {cartItem.quantity} {cartItem.quantity > 1 ? "items" : "item"} in
+            your cart
+          </p>
+        </div>
+      )}
+      {product.desc && (
+        <div className="space-y-1">
+          <p className="font-bold text-sm sm:text-base">Description</p>
+          <p className="text-sm sm:text-base text-gray-700">{product.desc}</p>
+        </div>
+      )}
+
       <Separator className="my-1" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex items-center gap-3">
@@ -171,14 +304,6 @@ const ProductInfo = ({
           </div>
         </div>
       </div>
-
-      <Separator className="my-1" />
-      {product.desc && (
-        <div className="space-y-1">
-          <p className="font-bold text-sm sm:text-base">Description</p>
-          <p className="text-sm sm:text-base text-gray-700">{product.desc}</p>
-        </div>
-      )}
     </div>
   );
 };

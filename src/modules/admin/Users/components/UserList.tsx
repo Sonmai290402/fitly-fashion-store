@@ -51,7 +51,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -273,11 +272,10 @@ const UserList = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
               {canEdit && (
                 <DropdownMenuItem onClick={() => setEditingUser(user)}>
                   <Pencil className="mr-2 size-4" />
-                  Edit User
+                  Edit
                 </DropdownMenuItem>
               )}
               {canDelete && (

@@ -21,18 +21,11 @@ import { useEffect } from "react";
 import toast from "react-hot-toast";
 import { create } from "zustand";
 
+import { STORAGE_KEYS } from "@/constants";
 import { auth, fireDB } from "@/firebase/firebaseConfig";
 import { LoginCredentials, SignUpCredentials } from "@/types/auth.types";
 import { UserData } from "@/types/user.types";
 import { handleFirebaseError } from "@/utils/configFirebaseError";
-
-export const STORAGE_KEYS = {
-  AUTH_USER: "auth_user_data",
-  REVIEW_VOTES: "review-store",
-  // WISHLIST: "wishlist-items",
-  // CART: "cart-items",
-  // RECENT_VIEWS: "recently-viewed",
-};
 
 const USER_SPECIFIC_STORAGE_KEYS = Object.values(STORAGE_KEYS);
 

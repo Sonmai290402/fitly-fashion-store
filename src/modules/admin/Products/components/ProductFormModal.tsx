@@ -614,7 +614,7 @@ const ProductFormModal = ({
                       {isEditMode ? "Saving..." : "Creating..."}
                     </>
                   ) : isEditMode ? (
-                    "Save Changes"
+                    "Save"
                   ) : (
                     "Create Product"
                   )}
