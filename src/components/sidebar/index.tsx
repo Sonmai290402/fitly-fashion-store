@@ -12,7 +12,7 @@ const Sidebar = () => {
   const hasHydrated = useHasHydrated();
 
   return (
-    <div className="p-5 border-r border-r-gray-200 dark:border-opacity-10 bg-white h-screen flex flex-col dark:bg-grayDarker">
+    <div className="p-5 border-r border-r-gray-200 dark:border-opacity-10 bg-white h-full flex flex-col dark:bg-grayDarker">
       <Link href="/" className="logo cursor-pointer mb-5">
         <span className="font-bold text-3xl text-primary">FITLY</span>
       </Link>

@@ -17,7 +17,8 @@ export default function OrderSummary({
   const { items, getTotalPrice } = useCartStore();
 
   const subtotal = getTotalPrice();
-  const total = subtotal;
+  const shippingCost = subtotal > 1000000 ? 0 : 30000;
+  const total = subtotal + shippingCost;
 
   return (
     <>
@@ -53,6 +54,12 @@ export default function OrderSummary({
             <span>Subtotal</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
+          <div className="flex justify-between">
+            <span>Shipping</span>
+            <span>
+              {shippingCost === 0 ? "Free" : formatCurrency(shippingCost)}
+            </span>
+          </div>
           <div className="flex justify-between font-bold pt-2 border-t">
             <span>Total</span>
             <span>{formatCurrency(total)}</span>
@@ -72,14 +79,8 @@ export default function OrderSummary({
 
       <p className="text-xs text-gray-500 mt-4 text-center">
         By placing your order, you agree to our{" "}
-        <a href="/terms" className="underline">
-          Terms of Service
-        </a>{" "}
-        and{" "}
-        <a href="/privacy" className="underline">
-          Privacy Policy
-        </a>
-        .
+        <span className="underline cursor-pointer">Terms of Service </span>
+        and <span className="underline cursor-pointer"> Privacy Policy</span>.
       </p>
     </>
   );

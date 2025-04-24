@@ -134,10 +134,15 @@ const UserList = () => {
   };
 
   const handleSaveRoleChange = async () => {
-    await updateUserRole(editingRoleUserId, editingUserRole);
-    setEditingRoleUserId("");
-    setEditingUserRole("");
-    setIsChangeRoleDialogOpen(false);
+    try {
+      await updateUserRole(editingRoleUserId, editingUserRole);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+    } finally {
+      setEditingRoleUserId("");
+      setEditingUserRole("");
+      setIsChangeRoleDialogOpen(false);
+    }
   };
 
   const columns: ColumnDef<UserData>[] = [

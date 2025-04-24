@@ -6,6 +6,7 @@ import Footer from "@/components/footer";
 import Header from "@/components/header";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
 import { useAuthListener } from "@/store/authStore";
+import { useCartUserSync } from "@/store/cartStore";
 
 export default function SiteLayout({
   children,
@@ -13,6 +14,7 @@ export default function SiteLayout({
   children: React.ReactNode;
 }>) {
   useAuthListener();
+  useCartUserSync();
   const hydrated = useHasHydrated();
   if (!hydrated) return null;
   return (

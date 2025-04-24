@@ -10,6 +10,8 @@ export type OrderData = {
   shippingAddress: AddressData;
   subtotal: number;
   total: number;
+  shippingCost?: number;
+  discount?: number;
   paymentMethod: string;
   createdAt: string | FieldValue;
   updatedAt: string | FieldValue;

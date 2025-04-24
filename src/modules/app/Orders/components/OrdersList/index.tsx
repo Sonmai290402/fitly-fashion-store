@@ -1,6 +1,5 @@
 "use client";
 
-import { Timestamp } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
@@ -11,7 +10,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useOrderStore } from "@/store/orderStore";
 import { OrderStatus } from "@/types/order.types";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { formatDateTime } from "@/utils/formatDateTime";
+import { formatTimeStamp } from "@/utils/formatTimestamp";
 
 export default function OrderList() {
   const { user } = useAuthStore();
@@ -78,27 +77,27 @@ export default function OrderList() {
         <div className="space-y-6">
           {orders.map((order) => (
             <div key={order.id} className="border rounded-lg overflow-hidden">
-              <div className="bg-gray-50 p-4 flex flex-wrap justify-between items-center gap-y-2">
-                <div>
-                  <span className="text-sm text-gray-500">Order placed</span>
-                  <p className="font-medium">
-                    {order.createdAt instanceof Timestamp
-                      ? formatDateTime(order.createdAt.toDate())
-                      : typeof order.createdAt === "string"
-                      ? formatDateTime(new Date(order.createdAt))
-                      : "Unknown date"}
-                  </p>
+              <div className="bg-gray-50 p-4 flex flex-col gap-2">
+                <div className="flex flex-col md:flex-row md:justify-between">
+                  <div>
+                    <span className="text-sm text-gray-500">Order placed</span>
+                    <p className="font-medium">
+                      {formatTimeStamp(order.createdAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Order #</span>
+                    <p className="font-medium">{order.orderNumber}</p>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-sm text-gray-500">Order #</span>
-                  <p className="font-medium">{order.orderNumber}</p>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-500">Total</span>
-                  <p className="font-medium">{formatCurrency(order.total)}</p>
-                </div>
-                <div>
-                  <OrderStatusBadge status={order.status} />
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="text-sm text-gray-500">Total</span>
+                    <p className="font-medium">{formatCurrency(order.total)}</p>
+                  </div>
+                  <div>
+                    <OrderStatusBadge status={order.status} />
+                  </div>
                 </div>
               </div>
 

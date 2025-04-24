@@ -1,6 +1,5 @@
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import clsx from "clsx";
-import { Timestamp } from "firebase/firestore";
 import { ChevronLeft, ChevronRight, Heart, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import React, { useCallback, useEffect, useState } from "react";
@@ -21,7 +20,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuthStore } from "@/store/authStore";
 import { useReviewStore } from "@/store/reviewStore";
 import { ProductReview } from "@/types/review.types";
-import { formatDateTime } from "@/utils/formatDateTime";
+import { formatTimeStamp } from "@/utils/formatTimestamp";
 
 import { RatingStars } from "./RatingStars";
 
@@ -43,14 +42,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
   const hasVoted = !!userHelpfulVotes[review.id];
 
-  const dateTime =
-    review.createdAt instanceof Timestamp
-      ? review.createdAt
-      : new Timestamp(0, 0);
-
-  const formattedDate = review.createdAt
-    ? formatDateTime(dateTime.toDate())
-    : "Recent";
+  const formattedDate = formatTimeStamp(review.createdAt);
 
   const handleToggleHelpful = async () => {
     if (isSubmitting) return;

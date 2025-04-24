@@ -2,15 +2,23 @@ import { Timestamp } from "firebase/firestore";
 
 import { formatDateTime } from "./formatDateTime";
 
-export function formatTimestamp(
-  createdAt: Timestamp | string | null | undefined
-): string {
+export function formatTimeStamp(createdAt: unknown): string {
   if (createdAt instanceof Timestamp) {
-    const date = createdAt.toDate();
-    return formatDateTime(date) || "Unknown date";
-  } else if (typeof createdAt === "string") {
-    return formatDateTime(new Date(createdAt)) || "Unknown date";
-  } else {
-    return "Unknown date";
+    const formattedDate = formatDateTime(createdAt.toDate());
+    return formattedDate ?? "Unknown date";
   }
+  if (typeof createdAt === "string") {
+    const parsed = new Date(createdAt);
+    if (!isNaN(parsed.getTime())) {
+      const formattedDate = formatDateTime(parsed);
+      return formattedDate ?? "Unknown date";
+    }
+  }
+  if (createdAt instanceof Date) {
+    const formattedDate = formatDateTime(createdAt);
+    return formattedDate ?? "Unknown date";
+  }
+
+  const formattedDate = formatDateTime(createdAt);
+  return formattedDate ?? "Unknown date";
 }

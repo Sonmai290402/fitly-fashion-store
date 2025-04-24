@@ -14,6 +14,7 @@ import { useCartStore } from "@/store/cartStore";
 import { formatCurrency } from "@/utils/formatCurrency";
 
 import { Badge } from "../ui/badge";
+import { Checkbox } from "../ui/checkbox";
 
 type CartSlidePanelProps = {
   open: boolean;
@@ -76,9 +77,11 @@ export default function CartSlidePanel({
   }, [open, onOpenChange]);
 
   const subtotal = items.reduce((total: number, item) => {
-    return total + item.price * item.quantity;
+    const price = item.sale_price ?? item.price;
+    return total + price * item.quantity;
   }, 0);
 
+  console.log(items);
   const isEmpty = items.length === 0;
 
   const handleQuantityChange = useCallback(
@@ -212,9 +215,12 @@ export default function CartSlidePanel({
                             exit={{ opacity: 0, height: 0, margin: 0 }}
                             transition={{ duration: 0.2 }}
                           >
+                            <div className="flex items-center justify-center">
+                              <Checkbox />
+                            </div>
                             <Link
                               href={`/product/${item.productId || item.id}`}
-                              className="flex-shrink-0 w-20 h-20 relative rounded overflow-hidden border"
+                              className="flex-shrink-0 aspect-[3/4] w-20 h-full relative rounded overflow-hidden border"
                               onClick={() => onOpenChange(false)}
                             >
                               <Image
@@ -306,12 +312,27 @@ export default function CartSlidePanel({
                                 </div>
 
                                 <div className="text-right">
-                                  <p className="font-semibold">
-                                    {formatCurrency(item.price)}
-                                  </p>
+                                  {item.sale_price ? (
+                                    <div className="space-x-2">
+                                      <span className="text-sm font-medium">
+                                        {formatCurrency(item.sale_price)}
+                                      </span>
+                                      <span className="text-sm line-through text-gray-500">
+                                        {formatCurrency(item.price)}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm line-through text-gray-500">
+                                      {formatCurrency(item.price)}
+                                    </span>
+                                  )}
+
                                   <p className="text-xs text-gray-500">
                                     Total:{" "}
-                                    {formatCurrency(item.price * item.quantity)}
+                                    {formatCurrency(
+                                      (item.sale_price ?? item.price) *
+                                        item.quantity
+                                    )}
                                   </p>
                                 </div>
                               </div>

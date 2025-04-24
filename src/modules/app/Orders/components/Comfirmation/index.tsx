@@ -79,16 +79,37 @@ export default function OrderConfirmation() {
             </li>
           ))}
         </ul>
+        <div>
+          <div className="flex justify-between mt-4">
+            <span className="text-sm text-gray-500">Subtotal</span>
+            <span className="font-medium">
+              {formatCurrency(currentOrder.subtotal)}
+            </span>
+          </div>
+          <div className="flex justify-between mt-2">
+            <span className="text-sm text-gray-500">Shipping</span>
+            <span className="font-medium">
+              {currentOrder.shippingCost === 0
+                ? "Free"
+                : formatCurrency(currentOrder.shippingCost || 0)}
+            </span>
+          </div>
+          <div className="flex justify-between font-bold pt-2 border-t">
+            <span>Total</span>
+            <span>{formatCurrency(currentOrder.total)}</span>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white border rounded-lg p-6 shadow-sm mb-8">
         <h2 className="text-lg font-bold mb-4">Shipping Information</h2>
         <p className="font-medium">{currentOrder.shippingAddress.fullName}</p>
         <p>{currentOrder.shippingAddress.detailAddress}</p>
-        {currentOrder.shippingAddress.district && (
-          <p>{currentOrder.shippingAddress.city}</p>
-        )}
-        <p>{currentOrder.shippingAddress.city}</p>
+
+        <p>
+          {currentOrder.shippingAddress.district},{" "}
+          {currentOrder.shippingAddress.city}
+        </p>
         <p className="mt-2">
           Phone: {currentOrder.shippingAddress.phoneNumber}
         </p>
@@ -124,10 +145,8 @@ export default function OrderConfirmation() {
 
 function formatPaymentMethod(method: string): string {
   switch (method) {
-    case "credit_card":
-      return "Credit Card";
-    case "paypal":
-      return "PayPal";
+    case "cash":
+      return "Cash";
     case "bank_transfer":
       return "Bank Transfer";
     default:

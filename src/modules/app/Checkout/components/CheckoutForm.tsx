@@ -3,7 +3,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
@@ -44,6 +44,7 @@ export default function CheckoutPage() {
   const { items, createOrderFromCart } = useCartStore();
   const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasCheckedCart = useRef(false);
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -65,9 +66,13 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (items.length === 0) {
-      toast.error("Your cart is empty");
-      router.push("/products");
+    if (!hasCheckedCart.current) {
+      hasCheckedCart.current = true;
+
+      if (items.length === 0) {
+        toast.error("Your cart is empty");
+        router.push("/products");
+      }
     }
   }, [router, user, items.length]);
 
@@ -76,16 +81,13 @@ export default function CheckoutPage() {
   }
 
   const onSubmit = async (data: CheckoutFormValues) => {
+    if (!user) {
+      toast.error("You need to be logged in to place an order");
+      return;
+    }
     setIsSubmitting(true);
 
     try {
-      console.log("hello");
-      if (!user) {
-        toast.error("You need to be logged in to place an order");
-        return;
-      }
-      console.log("hellop");
-
       const orderId = await createOrderFromCart(
         user,
         data.shipping,
@@ -153,7 +155,7 @@ export default function CheckoutPage() {
                       <FormItem className="md:col-span-2">
                         <FormLabel>Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="123 Hoan Kiem" {...field} />
+                          <Input placeholder="Enter the address" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -168,7 +170,10 @@ export default function CheckoutPage() {
                         <FormItem className="w-full">
                           <FormLabel>District</FormLabel>
                           <FormControl>
-                            <Input placeholder="Hoan Kiem" {...field} />
+                            <Input
+                              placeholder="Enter the district"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

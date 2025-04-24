@@ -1,7 +1,6 @@
 "use client";
 
 import { format } from "date-fns";
-import { Timestamp } from "firebase/firestore";
 import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,7 +12,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useOrderStore } from "@/store/orderStore";
 import { OrderStatus } from "@/types/order.types";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { formatDateTime } from "@/utils/formatDateTime";
+import { formatTimeStamp } from "@/utils/formatTimestamp";
 
 import { OrderTrackingProgress } from "./OrderTrackingProgress";
 
@@ -80,12 +79,7 @@ export default function OrderDetails() {
             Order #{currentOrder.orderNumber}
           </h1>
           <p className="text-gray-500">
-            Placed on{" "}
-            {currentOrder.createdAt instanceof Timestamp
-              ? formatDateTime(currentOrder.createdAt.toDate())
-              : typeof currentOrder.createdAt === "string"
-              ? formatDateTime(new Date(currentOrder.createdAt))
-              : "Unknown date"}
+            Placed on {formatTimeStamp(currentOrder.createdAt)}
           </p>
         </div>
       </div>
@@ -146,7 +140,10 @@ export default function OrderDetails() {
             <span>Subtotal</span>
             <span>{formatCurrency(currentOrder.subtotal)}</span>
           </div>
-
+          <div className="flex justify-between">
+            <span>Shipping</span>
+            <span>{formatCurrency(currentOrder.shippingCost || 0)}</span>
+          </div>
           <div className="flex justify-between font-bold pt-2 border-t">
             <span>Total</span>
             <span>{formatCurrency(currentOrder.total)}</span>

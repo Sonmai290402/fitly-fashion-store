@@ -10,11 +10,13 @@ export async function createOrder(
   items: CartItem[],
   shippingAddress: AddressData,
   paymentMethod: string,
-  subtotal: number
+  subtotal: number,
+  shippingCost: number = 30000,
+  discount: number = 0
 ): Promise<string> {
   try {
     const orderNumber = generateOrderNumber();
-    const total = subtotal;
+    const total = subtotal + shippingCost - discount;
 
     const orderData: Omit<OrderData, "id"> = {
       userId: user.uid,
@@ -23,6 +25,8 @@ export async function createOrder(
       status: "pending",
       paymentStatus: "pending",
       shippingAddress,
+      shippingCost,
+      discount,
       subtotal,
       total,
       paymentMethod,

@@ -210,20 +210,20 @@ export const useAuthStore = create<AuthState>((set) => ({
 
         toast.success("Login successfully!");
         return true;
-      }
-      return false;
-    } catch (error) {
-      if (loggedInFirebaseUser) {
+      } else {
         await signOut(auth);
+        saveUserToStorage(null);
+        set({ user: null });
+        toast.error("User data is invalid.");
+        return false;
       }
-
-      saveUserToStorage(null);
+    } catch (error) {
+      console.error("Login error:", error);
+      handleFirebaseError(error as FirebaseError);
       set({
-        user: null,
         error: (error as Error).message,
         loading: false,
       });
-      handleFirebaseError(error as FirebaseError);
       return false;
     } finally {
       set({ loading: false });

@@ -82,6 +82,11 @@ export const adminMenuItems = [
     ),
   },
   {
+    url: "/admin/orders",
+    title: "Order Management",
+    icon: (className?: string) => <Receipt className={className} />,
+  },
+  {
     url: "/admin/users",
     title: "User Management",
     icon: (className?: string) => <UserCog className={className} />,
@@ -91,11 +96,7 @@ export const adminMenuItems = [
     title: "Product Management",
     icon: (className?: string) => <Shirt className={className} size={20} />,
   },
-  {
-    url: "/admin/orders",
-    title: "Order Management",
-    icon: (className?: string) => <Receipt className={className} />,
-  },
+
   {
     url: "/admin/categories",
     title: "Category Management",
@@ -139,5 +140,5 @@ export const STORAGE_KEYS = {
   AUTH_USER: "auth_user_data",
   REVIEW_VOTES: "review-store",
   CART_ITEMS: "cart-items",
-  // RECENT_VIEWS: "recently-viewed",
+  CART_ITEMS_GUEST: "cart-items-guest",
 };

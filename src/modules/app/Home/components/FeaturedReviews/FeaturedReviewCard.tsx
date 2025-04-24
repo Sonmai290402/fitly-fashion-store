@@ -1,21 +1,13 @@
-import { Timestamp } from "firebase/firestore";
 import { Quote } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProductReview } from "@/types/review.types";
-import { formatDateTime } from "@/utils/formatDateTime";
+import { formatTimeStamp } from "@/utils/formatTimestamp";
 
 const FeaturedReviewCard = ({ review }: { review: Partial<ProductReview> }) => {
-  const dateTime =
-    review.createdAt instanceof Timestamp
-      ? review.createdAt
-      : new Timestamp(0, 0);
-
-  const formattedDate = review.createdAt
-    ? formatDateTime(dateTime.toDate())
-    : "Recent";
+  const formattedDate = formatTimeStamp(review.createdAt);
   return (
     <div className="flex">
       <div>

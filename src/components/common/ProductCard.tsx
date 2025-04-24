@@ -86,26 +86,25 @@ const ProductCard = ({
     try {
       setAddingToCart(true);
 
-      // Check if size selection is required but not selected
       if (availableSizes.length > 0 && selectedSizeIndex === -1) {
         toast.error("Please select a size");
         return;
       }
 
-      const price = product.sale_price || product.price || 0;
+      // const price = product.sale_price || product.price || 0;
       const selectedSize =
         selectedSizeIndex >= 0 ? availableSizes[selectedSizeIndex] : null;
 
-      // Create a unique ID for this item (product + variants)
       const itemId = `${product.id}-${selectedColor?.name || "default"}-${
         selectedSize?.name || "nosize"
       }`;
 
       addItem({
         id: itemId,
-        productId: product.id,
+        productId: product.id || "",
         title: product.title,
-        price,
+        sale_price: product.sale_price,
+        price: product.price,
         image:
           mainImage || (typeof product.image === "string" ? product.image : ""),
         quantity,
