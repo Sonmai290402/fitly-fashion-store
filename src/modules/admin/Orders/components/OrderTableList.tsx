@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table";
 import { useAdminOrderStore } from "@/store/adminOrderStore";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { formatTimeStamp } from "@/utils/formatTimestamp";
+import { formatTimestamp } from "@/utils/formatTimestamp";
 
 import OrderStatusBadge from "./OrderStatusBadge";
 
@@ -113,7 +113,7 @@ export default function OrderTableList() {
                   <TableCell className="font-medium">
                     {order.orderNumber}
                   </TableCell>
-                  <TableCell>{formatTimeStamp(order.createdAt)}</TableCell>
+                  <TableCell>{formatTimestamp(order.createdAt)}</TableCell>
                   <TableCell>{order.shippingAddress.fullName}</TableCell>
                   <TableCell>
                     <OrderStatusBadge status={order.status} />
@@ -131,7 +131,6 @@ export default function OrderTableList() {
           </Table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <Pagination className="mt-4">
             <PaginationContent>
@@ -147,7 +146,6 @@ export default function OrderTableList() {
 
               {Array.from({ length: totalPages }, (_, i) => i + 1)
                 .filter((page) => {
-                  // Show first page, last page, and pages around current page
                   return (
                     page === 1 ||
                     page === totalPages ||
@@ -155,7 +153,6 @@ export default function OrderTableList() {
                   );
                 })
                 .map((page, i, array) => {
-                  // Add ellipsis where needed
                   if (i > 0 && array[i - 1] !== page - 1) {
                     return (
                       <Fragment key={`ellipsis-${page}`}>

@@ -1,18 +1,18 @@
 "use client";
 
-import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
 import { useOrderStore } from "@/store/orderStore";
 import { OrderStatus } from "@/types/order.types";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { formatTimeStamp } from "@/utils/formatTimestamp";
+import { formatTimestamp } from "@/utils/formatTimestamp";
 
 import { OrderTrackingProgress } from "./OrderTrackingProgress";
 
@@ -20,6 +20,20 @@ export default function OrderDetails() {
   const { id } = useParams();
   const { user } = useAuthStore();
   const { currentOrder, loading, error, fetchOrderById } = useOrderStore();
+
+  const statusMap: Record<
+    OrderStatus,
+    {
+      label: string;
+      variant: "default" | "secondary" | "destructive" | "success";
+    }
+  > = {
+    pending: { label: "Order Placed", variant: "secondary" },
+    processing: { label: "Processing", variant: "default" },
+    shipped: { label: "Shipped", variant: "default" },
+    delivered: { label: "Delivered", variant: "success" },
+    cancelled: { label: "Cancelled", variant: "destructive" },
+  };
 
   useEffect(() => {
     if (id) {
@@ -79,7 +93,7 @@ export default function OrderDetails() {
             Order #{currentOrder.orderNumber}
           </h1>
           <p className="text-gray-500">
-            Placed on {formatTimeStamp(currentOrder.createdAt)}
+            Placed on {formatTimestamp(currentOrder.createdAt)}
           </p>
         </div>
       </div>
@@ -160,9 +174,11 @@ export default function OrderDetails() {
             </p>
             <p>{currentOrder.shippingAddress.detailAddress}</p>
             {currentOrder.shippingAddress.district && (
-              <p>{currentOrder.shippingAddress.district}</p>
+              <p>
+                {currentOrder.shippingAddress.district},{" "}
+                {currentOrder.shippingAddress.city}
+              </p>
             )}
-            <p>{currentOrder.shippingAddress.city}</p>
             <p className="mt-2">
               Phone: {currentOrder.shippingAddress.phoneNumber}
             </p>
@@ -174,39 +190,33 @@ export default function OrderDetails() {
         <h2 className="bg-gray-50 p-4 font-semibold">Order History</h2>
         <div className="p-4">
           <ol className="relative border-l border-gray-200 ml-3">
-            {currentOrder.statusHistory.map((history, index) => (
-              <li key={index} className="mb-6 ml-6">
-                <span className="absolute flex items-center justify-center w-6 h-6 bg-white rounded-full -left-3 ring-8 ring-white">
-                  <div className="w-3 h-3 rounded-full bg-primary" />
-                </span>
-                <h3 className="font-medium">
-                  {formatOrderStatus(history.status)}
-                </h3>
-                <time className="block text-sm text-gray-500">
-                  {format(new Date(history.timestamp), "MMM d, yyyy h:mm a")}
-                </time>
-                {history.comment && (
-                  <p className="text-sm text-gray-700 mt-1">
-                    {history.comment}
-                  </p>
-                )}
-              </li>
-            ))}
+            {currentOrder.statusHistory
+              .slice()
+              .reverse()
+              .map((history, index) => (
+                <li key={index} className="mb-6 ml-6">
+                  <span className="absolute flex items-center justify-center w-6 h-6 bg-white rounded-full -left-3 ring-8 ring-white">
+                    <div className="w-3 h-3 rounded-full bg-primary" />
+                  </span>
+                  <Badge
+                    variant={statusMap[history.status].variant}
+                    className="mb-2 text-base"
+                  >
+                    {statusMap[history.status].label}
+                  </Badge>
+                  <time className="block text-sm text-gray-500">
+                    {formatTimestamp(history.timestamp)}
+                  </time>
+                  {history.comment && (
+                    <p className="text-sm text-gray-700 mt-1">
+                      {history.comment}
+                    </p>
+                  )}
+                </li>
+              ))}
           </ol>
         </div>
       </div>
     </div>
   );
-}
-
-function formatOrderStatus(status: OrderStatus): string {
-  const statuses: Record<OrderStatus, string> = {
-    pending: "Order Placed",
-    processing: "Processing",
-    shipped: "Shipped",
-    delivered: "Delivered",
-    cancelled: "Cancelled",
-  };
-
-  return statuses[status] || status;
 }

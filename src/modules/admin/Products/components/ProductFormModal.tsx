@@ -104,7 +104,6 @@ const ProductFormModal = ({
   onOpenChange,
   product = null,
 }: ProductFormModalProps) => {
-  // const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRemoveColor, setIsRemoveColor] = useState(false);
   const [colorToRemove, setColorToRemove] = useState<number | null>(null);
@@ -364,7 +363,6 @@ const ProductFormModal = ({
               onSubmit={handleSubmit(onSubmit)}
               className="flex flex-col gap-5 mt-4"
             >
-              {/* Form content remains the same */}
               <div className="space-y-5">
                 <FormField
                   control={control}
@@ -485,7 +483,6 @@ const ProductFormModal = ({
                   />
                 </div>
 
-                {/* Collections Section */}
                 <div className="space-y-2">
                   <FormLabel>Collections</FormLabel>
                   <div className="grid grid-cols-2 gap-4">
@@ -625,7 +622,6 @@ const ProductFormModal = ({
         </DialogContent>
       </Dialog>
 
-      {/* Color removal alert dialog */}
       <AlertDialog open={isRemoveColor} onOpenChange={setIsRemoveColor}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -649,7 +645,6 @@ const ProductFormModal = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Unsaved changes alert dialog */}
       <AlertDialog
         open={showUnsavedChangesAlert}
         onOpenChange={setShowUnsavedChangesAlert}

@@ -354,7 +354,6 @@ const UserList = () => {
     }
   };
 
-  // Can only delete users if current user is an admin
   const canBulkDelete =
     currentUser?.role === "admin" && selectedUserIds.length > 0;
 
@@ -586,7 +585,6 @@ const UserList = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Edit User Dialog */}
       <Dialog
         open={!!editingUser}
         onOpenChange={(open) => !open && setEditingUser(null)}

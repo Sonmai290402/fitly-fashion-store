@@ -306,7 +306,6 @@ export default function CollectionFormModal({
               )}
             />
 
-            {/* Hidden fields for slug and URL */}
             <input type="hidden" {...form.register("slug")} />
             <input type="hidden" {...form.register("url")} />
 

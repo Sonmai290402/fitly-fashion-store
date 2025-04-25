@@ -117,7 +117,6 @@ export default function OrderFilter() {
                   <SelectItem value="amount-asc">
                     Amount (Low to High)
                   </SelectItem>
-                  <SelectItem value="status">Status</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>

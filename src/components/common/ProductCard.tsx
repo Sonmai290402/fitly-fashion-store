@@ -74,12 +74,10 @@ const ProductCard = ({
     return selectedColor?.sizes?.filter((size) => size.inStock > 0) || [];
   }, [selectedColor]);
 
-  // Handle quantity change
   const handleQuantityChange = useCallback((delta: number) => {
     setQuantity((prev) => Math.max(1, prev + delta));
   }, []);
 
-  // Handle add to cart
   const handleAddToCart = useCallback(() => {
     if (addingToCart) return;
 
@@ -91,7 +89,6 @@ const ProductCard = ({
         return;
       }
 
-      // const price = product.sale_price || product.price || 0;
       const selectedSize =
         selectedSizeIndex >= 0 ? availableSizes[selectedSizeIndex] : null;
 
@@ -201,7 +198,7 @@ const ProductCard = ({
                     <button
                       onClick={() => {
                         setSelectedColorIndex(index);
-                        // Reset size selection when color changes
+
                         setSelectedSizeIndex(-1);
                       }}
                       className={clsx(

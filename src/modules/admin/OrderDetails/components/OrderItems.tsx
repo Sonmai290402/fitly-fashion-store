@@ -86,7 +86,6 @@ export default function OrderItems({ order }: OrderItemsProps) {
           </Table>
         </div>
 
-        {/* Order Summary */}
         <div className="mt-6 border-t pt-4">
           <div className="space-y-2">
             <div className="flex justify-between">

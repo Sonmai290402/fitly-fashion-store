@@ -78,7 +78,6 @@ export function ReviewForm({
       status: "pending" as const,
     };
 
-    // Pass an empty File array if the addReview function expects File objects
     const reviewId = await addReview(reviewData, []);
 
     if (reviewId) {

@@ -1,12 +1,12 @@
-import { LogOut, Package, User } from "lucide-react";
+import { LogOut, Package, Search, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
 import { useMediaQuery } from "usehooks-ts";
 
 import { headerActionItems } from "@/constants";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
 import { useAuthStore } from "@/store/authStore";
+import { useSearchStore } from "@/store/searchStore";
 
 import { ModeToggle } from "../common/ModeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -18,32 +18,51 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import HeaderSearch from "./HeaderSearch";
 
 const HeaderActions = () => {
   const { logout, user } = useAuthStore();
+  const { toggleSearch } = useSearchStore();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const hasHydrated = useHasHydrated();
 
+  const filteredItems = headerActionItems.filter(
+    (item) => item.title.toLowerCase() !== "search"
+  );
+
   const displayedItems = isDesktop
-    ? headerActionItems.filter((item) => {
+    ? filteredItems.filter((item) => {
         if (user?.role !== "admin" && item.title.toLowerCase() === "admin") {
           return false;
         }
         return true;
       })
-    : headerActionItems.filter((item) => {
+    : filteredItems.filter((item) => {
         const title = item.title.toLowerCase();
         if (user?.role !== "admin" && title === "admin") return false;
-        return title === "cart" || title === "user";
+        return title === "cart";
       });
 
   if (!hasHydrated) return <div className="flex flex-1"></div>;
 
   return (
-    <nav className="flex flex-1 justify-end items-center gap-1 md:gap-5">
+    <nav className="flex flex-1 justify-end items-center gap-1 md:gap-3">
+      <HeaderSearch isMobile={isMobile} />
+
+      <button
+        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+        onClick={toggleSearch}
+        aria-label="Search"
+      >
+        <Search className="h-5 w-5" />
+      </button>
+
       {displayedItems.map(({ icon, title, url }) => (
         <Link key={title} href={url}>
-          <button className="p-2 hover:bg-gray-100 rounded-full">{icon}</button>
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+            {icon}
+          </button>
         </Link>
       ))}
 
@@ -68,17 +87,18 @@ const HeaderActions = () => {
           <DropdownMenuContent align="end" className="w-56 z-100">
             <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <Link href="/orders">
-              <DropdownMenuItem className="cursor-pointer">
-                <Package className="mr-2 h-4 w-4" />
-                <span>My Orders</span>
-              </DropdownMenuItem>
-            </Link>
 
             <Link href="/profile">
               <DropdownMenuItem className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
+              </DropdownMenuItem>
+            </Link>
+
+            <Link href="/orders">
+              <DropdownMenuItem className="cursor-pointer">
+                <Package className="mr-2 h-4 w-4" />
+                <span>My Orders</span>
               </DropdownMenuItem>
             </Link>
 

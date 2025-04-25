@@ -475,7 +475,6 @@ export default function ProductList() {
         product={editingProduct}
       />
 
-      {/* Single Delete Dialog */}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}

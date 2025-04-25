@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 
 import { Button } from "@/components/ui/button";
 import { useAdminOrderStore } from "@/store/adminOrderStore";
-import { formatTimeStamp } from "@/utils/formatTimestamp";
+import { formatTimestamp } from "@/utils/formatTimestamp";
 
 export default function HeaderActions() {
   const { filteredOrders, loading, fetchAllOrders } = useAdminOrderStore();
@@ -13,7 +13,7 @@ export default function HeaderActions() {
     const worksheet = XLSX.utils.json_to_sheet(
       filteredOrders.map((order) => ({
         "Order Number": order.orderNumber,
-        Date: formatTimeStamp(order.createdAt),
+        Date: formatTimestamp(order.createdAt),
         Customer: order.shippingAddress.fullName,
         Status: order.status,
         "Payment Status": order.paymentStatus,

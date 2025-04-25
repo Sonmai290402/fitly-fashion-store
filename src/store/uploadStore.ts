@@ -1,5 +1,3 @@
-// src/store/uploadStore.ts
-
 import toast from "react-hot-toast";
 import { create } from "zustand";
 
@@ -78,19 +76,16 @@ export const useUploadStore = create<UploadState>((set, get) => ({
     const urls: string[] = [];
 
     try {
-      // Process each file sequentially to avoid overwhelming the server
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const uploadId = `${baseUploadId}-${i}`;
 
-        // Set loading state for this file
         set((state) => ({
           loading: { ...state.loading, [uploadId]: true },
           progress: { ...state.progress, [uploadId]: 0 },
           error: null,
         }));
 
-        // Upload the file
         const url = await get().uploadImage(file, path, uploadId);
 
         if (url) {
@@ -103,7 +98,7 @@ export const useUploadStore = create<UploadState>((set, get) => ({
       const errorMessage =
         error instanceof Error ? error.message : "Upload failed";
       toast.error(`Failed to upload some images: ${errorMessage}`);
-      return urls; // Return any successfully uploaded images
+      return urls;
     }
   },
 

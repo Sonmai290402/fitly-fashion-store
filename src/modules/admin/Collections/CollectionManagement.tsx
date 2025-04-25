@@ -283,7 +283,6 @@ export default function CollectionManagement() {
         </Button>
       </div>
 
-      {/* Bulk action bar - show when items are selected */}
       {selectedCollectionIds.length > 0 && (
         <div className="bg-primary/5 rounded-lg mb-4 p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -451,7 +450,6 @@ export default function CollectionManagement() {
         collection={editingCollection}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={(open) => !isDeleting && setIsDeleteDialogOpen(open)}
@@ -484,7 +482,6 @@ export default function CollectionManagement() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Confirmation Dialog */}
       <AlertDialog
         open={isBulkDeleteDialogOpen}
         onOpenChange={(open) => !isDeleting && setIsBulkDeleteDialogOpen(open)}

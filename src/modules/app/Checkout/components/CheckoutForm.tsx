@@ -1,4 +1,3 @@
-// app/checkout/page.tsx
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -162,38 +161,33 @@ export default function CheckoutPage() {
                     )}
                   />
 
-                  <div className="flex w-full items-center gap-4">
-                    <FormField
-                      control={form.control}
-                      name="shipping.district"
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>District</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter the district"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <FormField
+                    control={form.control}
+                    name="shipping.district"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>District</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter the district" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={form.control}
-                      name="shipping.city"
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel>City</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Hanoi" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="shipping.city"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Hanoi" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </div>
 

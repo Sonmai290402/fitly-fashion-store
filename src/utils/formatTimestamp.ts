@@ -2,7 +2,7 @@ import { Timestamp } from "firebase/firestore";
 
 import { formatDateTime } from "./formatDateTime";
 
-export function formatTimeStamp(createdAt: unknown): string {
+export function formatTimestamp(createdAt: unknown): string {
   if (createdAt instanceof Timestamp) {
     const formattedDate = formatDateTime(createdAt.toDate());
     return formattedDate ?? "Unknown date";

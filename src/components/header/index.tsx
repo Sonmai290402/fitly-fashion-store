@@ -33,6 +33,7 @@ const Header = () => {
         <Link href="/" className="flex justify-center flex-shrink-0">
           <span className="font-semibold text-2xl dark:text-white">FITLY</span>
         </Link>
+
         <HeaderActions />
       </div>
     </header>

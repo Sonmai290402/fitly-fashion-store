@@ -33,7 +33,7 @@ interface ReviewsState {
   reviews: ProductReview[];
   productRatings: Record<string, ProductRatingSummary>;
   userHelpfulVotes: Record<string, boolean>;
-  userHelpfulVotesMap: Record<string, Record<string, boolean>>; // Map of userID -> {reviewID: voted}
+  userHelpfulVotesMap: Record<string, Record<string, boolean>>;
   loading: boolean;
   error: string | null;
   lastVisible: unknown;
@@ -77,7 +77,6 @@ interface ReviewsState {
   syncUserContext: () => void;
 }
 
-// Set up auth listener for user changes
 const setupAuthListener = () => {
   const handleStorageChange = (event: StorageEvent) => {
     if (event.key === STORAGE_KEYS.AUTH_USER) {
@@ -95,7 +94,7 @@ export const useReviewStore = create<ReviewsState>()(
     (set, get) => ({
       reviews: [],
       userHelpfulVotes: {},
-      userHelpfulVotesMap: {}, // Store votes by user ID
+      userHelpfulVotesMap: {},
       productRatings: {},
       loading: false,
       error: null,
@@ -103,20 +102,17 @@ export const useReviewStore = create<ReviewsState>()(
       hasMore: true,
       currentUserId: null,
 
-      // Sync user context when auth state changes
       syncUserContext: () => {
         const currentUser = useAuthStore.getState().user;
         const userId = currentUser?.uid || null;
         const { userHelpfulVotesMap } = get();
 
         if (userId) {
-          // User logged in - load their votes
           set({
             currentUserId: userId,
             userHelpfulVotes: userHelpfulVotesMap[userId] || {},
           });
         } else {
-          // User logged out - clear active votes
           set({
             currentUserId: null,
             userHelpfulVotes: {},
@@ -133,7 +129,6 @@ export const useReviewStore = create<ReviewsState>()(
           return;
         }
 
-        // Set current user ID and load their votes
         const { userHelpfulVotesMap } = get();
         set({
           currentUserId: currentUser.uid,
@@ -155,7 +150,6 @@ export const useReviewStore = create<ReviewsState>()(
             where("status", "==", "approved")
           );
 
-          // Apply sorting
           if (sortBy === "recent") {
             reviewQuery = query(reviewQuery, orderBy("createdAt", "desc"));
           } else if (sortBy === "helpful") {
@@ -166,7 +160,6 @@ export const useReviewStore = create<ReviewsState>()(
             reviewQuery = query(reviewQuery, orderBy("rating", "asc"));
           }
 
-          // Apply rating filter
           if (filterBy !== "all" && !isNaN(parseInt(filterBy))) {
             reviewQuery = query(
               reviewQuery,
@@ -182,7 +175,6 @@ export const useReviewStore = create<ReviewsState>()(
             ...doc.data(),
           })) as ProductReview[];
 
-          // Process reviews and handle potentially deleted users
           const reviewsWithUserData = await Promise.all(
             reviewList.map(async (review) => {
               try {
@@ -194,7 +186,6 @@ export const useReviewStore = create<ReviewsState>()(
                 );
 
                 if (!userDoc.empty) {
-                  // User exists, include user data with the review
                   const userData = userDoc.docs[0].data();
                   return {
                     ...review,
@@ -311,7 +302,6 @@ export const useReviewStore = create<ReviewsState>()(
                 );
 
                 if (!userDoc.empty) {
-                  // User exists
                   const userData = userDoc.docs[0].data();
                   return {
                     ...review,
@@ -324,7 +314,6 @@ export const useReviewStore = create<ReviewsState>()(
                     userExists: true,
                   };
                 } else {
-                  // User was deleted
                   return {
                     ...review,
                     user: {
@@ -439,7 +428,7 @@ export const useReviewStore = create<ReviewsState>()(
 
           const newReview = await addDoc(collection(fireDB, "reviews"), {
             ...reviewData,
-            images: imageUrls, // These are already URLs
+            images: imageUrls,
             helpfulVotes: 0,
             reportCount: 0,
             status: "pending",
@@ -640,13 +629,11 @@ export const useReviewStore = create<ReviewsState>()(
             });
           });
 
-          // Update user's review count
           const userRef = doc(fireDB, "users", reviewData.userId);
           await updateDoc(userRef, {
             reviewCount: increment(-1),
           });
 
-          // Update local state
           set((state) => ({
             reviews: state.reviews.filter((review) => review.id !== reviewId),
             loading: false,
@@ -674,19 +661,16 @@ export const useReviewStore = create<ReviewsState>()(
 
         const { userHelpfulVotes, userHelpfulVotesMap, currentUserId } = get();
         if (!currentUserId || currentUserId !== currentUser.uid) {
-          // Ensure current user is set properly
           set({ currentUserId: currentUser.uid });
         }
 
         const hasVoted = userHelpfulVotes[reviewId];
 
-        // Optimistic update for current user
         const updatedUserVotes = {
           ...userHelpfulVotes,
           [reviewId]: !hasVoted,
         };
 
-        // Update the user votes map with the current user's votes
         const updatedVotesMap = {
           ...userHelpfulVotesMap,
           [currentUser.uid]: updatedUserVotes,
@@ -715,7 +699,6 @@ export const useReviewStore = create<ReviewsState>()(
         } catch (error) {
           console.error("Error toggling helpful vote:", error);
 
-          // Revert optimistic update on error
           const revertedUserVotes = {
             ...userHelpfulVotes,
             [reviewId]: hasVoted,

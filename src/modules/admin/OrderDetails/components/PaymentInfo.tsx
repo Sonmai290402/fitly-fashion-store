@@ -38,7 +38,6 @@ export default function PaymentInfo({
     try {
       const orderRef = doc(fireDB, "orders", order.id);
 
-      // Add payment status update to status history
       const updatedStatusHistory = [...(order.statusHistory || [])];
       updatedStatusHistory.push({
         status: order.status,

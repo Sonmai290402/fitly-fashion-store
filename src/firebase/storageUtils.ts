@@ -31,10 +31,8 @@ export async function uploadFile(
     }
 
     try {
-      // Create a proper path by removing any leading/trailing slashes
       const cleanPath = path.replace(/^\/|\/$/g, "");
 
-      // Generate file name if not provided
       const fileExtension = file.name.split(".").pop() || "";
       const finalFileName = fileName || `${uuidv4()}.${fileExtension}`;
       const fullPath = `${cleanPath}/${finalFileName}`;
@@ -64,10 +62,6 @@ export async function uploadFile(
   });
 }
 
-/**
- * Delete a file from Firebase Storage
- * @param url Full URL of the file to delete
- */
 export async function deleteFile(url: string): Promise<boolean> {
   if (!url.includes("firebasestorage.googleapis.com")) {
     console.warn("Not a Firebase Storage URL:", url);
@@ -75,7 +69,6 @@ export async function deleteFile(url: string): Promise<boolean> {
   }
 
   try {
-    // Extract the path from the URL
     const fileRef = ref(storage, getPathFromURL(url));
     await deleteObject(fileRef);
     return true;
@@ -85,11 +78,6 @@ export async function deleteFile(url: string): Promise<boolean> {
   }
 }
 
-/**
- * Delete multiple files from Firebase Storage
- * @param urls Array of URLs to delete
- * @returns Number of successfully deleted files
- */
 export async function deleteMultipleFiles(urls: string[]): Promise<number> {
   let successCount = 0;
 
@@ -105,20 +93,14 @@ export async function deleteMultipleFiles(urls: string[]): Promise<number> {
   return successCount;
 }
 
-/**
- * Delete all files in a directory
- * @param path Directory path to delete
- */
 export async function deleteDirectory(path: string): Promise<void> {
   const dirRef = ref(storage, path);
 
   try {
     const result = await listAll(dirRef);
 
-    // Delete all files in the directory
     await Promise.all(result.items.map((item) => deleteObject(item)));
 
-    // Recursively delete all subdirectories
     await Promise.all(
       result.prefixes.map((prefix) => deleteDirectory(prefix.fullPath))
     );
@@ -128,10 +110,6 @@ export async function deleteDirectory(path: string): Promise<void> {
   }
 }
 
-/**
- * Extract file path from Firebase Storage URL
- * @param url Firebase Storage URL
- */
 export function getPathFromURL(url: string): string {
   try {
     const decodedUrl = decodeURIComponent(url);
@@ -144,10 +122,6 @@ export function getPathFromURL(url: string): string {
   }
 }
 
-/**
- * Get filename from a Firebase Storage URL
- * @param url Firebase Storage URL
- */
 export function getFileNameFromURL(url: string): string {
   try {
     const path = getPathFromURL(url);
@@ -158,10 +132,6 @@ export function getFileNameFromURL(url: string): string {
   }
 }
 
-/**
- * Generate a unique filename with original extension
- * @param originalFileName The original file name
- */
 export function generateUniqueFileName(originalFileName: string): string {
   const fileExtension = originalFileName.split(".").pop() || "";
   return `${uuidv4()}.${fileExtension}`;

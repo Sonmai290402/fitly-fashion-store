@@ -58,6 +58,7 @@ export const useProductStore = create<ProductState>((set) => ({
       const newProduct = {
         ...productData,
         createdAt: serverTimestamp(),
+        searchableTitle: productData.title.toLowerCase().trim(),
         date: new Date().toLocaleString("vi-VN", {
           month: "short",
           day: "2-digit",

@@ -1,4 +1,3 @@
-// src/components/reviews/StarRatingInput.tsx
 import { Star } from "lucide-react";
 import React, { useState } from "react";
 
@@ -15,7 +14,6 @@ export function StarRatingInput({
 }: StarRatingInputProps) {
   const [hoverRating, setHoverRating] = useState(0);
 
-  // Map size to pixel values
   const sizeMap = {
     sm: "h-4 w-4",
     md: "h-6 w-6",

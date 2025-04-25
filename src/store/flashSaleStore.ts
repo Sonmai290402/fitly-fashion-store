@@ -112,7 +112,6 @@ export const useFlashSaleStore = create<FlashSaleState>((set, get) => ({
   },
 
   getActiveFlashSales: () => {
-    // Current time to check active status
     const now = new Date().toISOString();
 
     return get()
@@ -127,7 +126,6 @@ export const useFlashSaleStore = create<FlashSaleState>((set, get) => ({
     try {
       const flashSalesRef = collection(fireDB, "flashSales");
 
-      // Check if flash sale with same slug exists
       if (flashSaleData.slug) {
         const q = query(flashSalesRef, where("slug", "==", flashSaleData.slug));
         const querySnapshot = await getDocs(q);
@@ -139,7 +137,6 @@ export const useFlashSaleStore = create<FlashSaleState>((set, get) => ({
         }
       }
 
-      // Convert string dates to Firebase timestamps
       const startDate = flashSaleData.startDate
         ? new Date(flashSaleData.startDate)
         : new Date();
@@ -188,13 +185,11 @@ export const useFlashSaleStore = create<FlashSaleState>((set, get) => ({
     try {
       const flashSaleRef = doc(fireDB, "flashSales", id);
 
-      // Check if slug exists (if changing)
       if (data.slug) {
         const flashSalesRef = collection(fireDB, "flashSales");
         const q = query(flashSalesRef, where("slug", "==", data.slug));
         const querySnapshot = await getDocs(q);
 
-        // If found and it's not the current document
         if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) {
           set({ loading: false });
           toast.error("Flash sale with this slug already exists!");
@@ -202,7 +197,6 @@ export const useFlashSaleStore = create<FlashSaleState>((set, get) => ({
         }
       }
 
-      // Convert string dates to Firebase timestamps if present
       const updateData: Record<string, unknown> = {
         ...data,
         updatedAt: serverTimestamp(),
@@ -221,7 +215,6 @@ export const useFlashSaleStore = create<FlashSaleState>((set, get) => ({
         updateData as { [x: string]: FieldValue | Partial<unknown> | undefined }
       );
 
-      // Update in-memory state
       set((state) => ({
         flashSales: state.flashSales.map((sale) =>
           sale.id === id
@@ -229,7 +222,7 @@ export const useFlashSaleStore = create<FlashSaleState>((set, get) => ({
                 ...sale,
                 ...data,
                 updatedAt: new Date().toISOString(),
-                // Keep ISO format for dates in in-memory state
+
                 startDate: data.startDate || sale.startDate,
                 endDate: data.endDate || sale.endDate,
               }
@@ -303,7 +296,6 @@ export const useFlashSaleStore = create<FlashSaleState>((set, get) => ({
       const productIds = data.productIds || [];
 
       if (productIds.includes(productId)) {
-        // Already in flash sale
         return true;
       }
 
@@ -349,7 +341,6 @@ export const useFlashSaleStore = create<FlashSaleState>((set, get) => ({
       const productIds = data.productIds || [];
 
       if (!productIds.includes(productId)) {
-        // Not in flash sale
         return true;
       }
 
@@ -396,7 +387,6 @@ export const useFlashSaleStore = create<FlashSaleState>((set, get) => ({
       const data = flashSaleSnap.data();
       const existingProductIds = data.productIds || [];
 
-      // Filter out duplicates
       const newProductIds = productIds.filter(
         (id) => !existingProductIds.includes(id)
       );

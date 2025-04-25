@@ -4,10 +4,10 @@ import React from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProductReview } from "@/types/review.types";
-import { formatTimeStamp } from "@/utils/formatTimestamp";
+import { formatTimestamp } from "@/utils/formatTimestamp";
 
 const FeaturedReviewCard = ({ review }: { review: Partial<ProductReview> }) => {
-  const formattedDate = formatTimeStamp(review.createdAt);
+  const formattedDate = formatTimestamp(review.createdAt);
   return (
     <div className="flex">
       <div>

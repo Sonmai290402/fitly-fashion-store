@@ -37,7 +37,6 @@ export function DateTimePicker({
 }: DateTimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Generate hours and minutes arrays for the time picker
   const hours = Array.from({ length: 24 }, (_, i) =>
     i.toString().padStart(2, "0")
   );
@@ -74,9 +73,8 @@ export function DateTimePicker({
           onSelect={(newDate) => {
             if (!newDate) return;
 
-            // Create a new date to avoid mutation
             const updatedDate = new Date(newDate);
-            // Preserve the current time
+
             updatedDate.setHours(
               date?.getHours() || new Date().getHours(),
               date?.getMinutes() || new Date().getMinutes(),

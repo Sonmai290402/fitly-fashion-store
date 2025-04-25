@@ -6,7 +6,6 @@ if (!getApps().length) {
     process.env.FIREBASE_SERVICE_ACCOUNT_KEY!
   );
 
-  // Fix PEM format: replace escaped newlines with real newlines
   rawServiceAccount.private_key = rawServiceAccount.private_key.replace(
     /\\n/g,
     "\n"

@@ -186,7 +186,6 @@ const ProductInfo = ({
         </div>
       )}
 
-      {/* Sizes section */}
       {availableSizes.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -211,7 +210,6 @@ const ProductInfo = ({
         </div>
       )}
 
-      {/* Quantity selector */}
       <div className="flex items-center gap-3">
         <p className="font-medium">Quantity</p>
         <div className="flex items-center border rounded">
@@ -237,7 +235,6 @@ const ProductInfo = ({
         </div>
       </div>
 
-      {/* Add to Cart Button */}
       <Button
         size="lg"
         className="mt-2 w-full py-5 sm:py-6 text-base sm:text-lg"

@@ -344,7 +344,6 @@ export default function CategoryManagement() {
         </div>
       )}
 
-      {/* Data Table */}
       <div className="rounded-md border bg-white">
         <div className="flex items-center gap-2 p-4">
           <Search className="h-4 w-4 text-gray-400" />
@@ -504,7 +503,6 @@ export default function CategoryManagement() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Confirmation */}
       <AlertDialog
         open={isBulkDeleteDialogOpen}
         onOpenChange={setIsBulkDeleteDialogOpen}

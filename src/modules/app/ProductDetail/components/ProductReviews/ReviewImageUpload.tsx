@@ -1,4 +1,3 @@
-// src/components/reviews/ReviewImageUpload.tsx
 import { Loader2, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState } from "react";
@@ -31,13 +30,11 @@ export default function ReviewImageUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       alert("Please select an image file");
       return;
     }
 
-    // Validate file size (2MB)
     if (file.size > 2 * 1024 * 1024) {
       alert("Image size should be less than 2MB");
       return;
@@ -56,7 +53,7 @@ export default function ReviewImageUpload({
       console.error("Error uploading review image:", error);
     } finally {
       setIsUploading(false);
-      // Reset file input
+
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -77,7 +74,6 @@ export default function ReviewImageUpload({
   return (
     <div>
       <div className="flex flex-wrap gap-2">
-        {/* Display uploaded images */}
         {uploadedImages.map((url, index) => (
           <div
             key={index}
@@ -99,7 +95,6 @@ export default function ReviewImageUpload({
           </div>
         ))}
 
-        {/* Upload button */}
         {uploadedImages.length < maxImages && (
           <div className="h-16 w-16 relative">
             <input

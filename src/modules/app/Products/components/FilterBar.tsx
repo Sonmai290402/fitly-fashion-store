@@ -366,7 +366,6 @@ export default function FilterBar({
         <Separator />
       </div>
 
-      {/* Size Section */}
       <div className="mb-4 space-y-4">
         <div
           className="flex items-center justify-between cursor-pointer"
@@ -399,7 +398,6 @@ export default function FilterBar({
         <Separator />
       </div>
 
-      {/* Price Range Section */}
       <div className="mb-4 space-y-4">
         <div
           className="flex items-center justify-between cursor-pointer"
@@ -459,7 +457,6 @@ export default function FilterBar({
         <Separator />
       </div>
 
-      {/* Sort By Section */}
       <div className="mb-4 space-y-4">
         <h3 className="font-medium">Sort By</h3>
 
@@ -489,13 +486,11 @@ export default function FilterBar({
         <Separator />
       </div>
 
-      {/* Active Filters Section */}
       {activeFiltersCount > 0 && (
         <div className="mb-4">
           <h3 className="text-sm font-medium mb-2">Active Filters:</h3>
           <div className="flex flex-wrap gap-2">
             {Object.entries(initialFilters).map(([key, value]) => {
-              // Skip sort parameter for active filters display
               if (key === "sort") return null;
 
               let label = "";

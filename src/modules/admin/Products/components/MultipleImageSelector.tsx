@@ -1,5 +1,3 @@
-// src/components/admin/MultipleImageSelector.tsx
-
 import { Loader, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState } from "react";
@@ -188,7 +186,6 @@ export default function MultipleImageSelector({
         )}
       </div>
 
-      {/* Image count */}
       <div className="flex justify-between items-center text-xs text-gray-500">
         <div>
           {validImages.length} of {maxImages} images

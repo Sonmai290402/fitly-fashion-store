@@ -193,7 +193,6 @@ export default function FlashSale() {
             they&#39;re gone!
           </p>
 
-          {/* Countdown timer */}
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2 text-gray-700">
               <Clock className="h-5 w-5" />
@@ -205,7 +204,6 @@ export default function FlashSale() {
           </div>
         </div>
 
-        {/* Product carousel */}
         <div className="relative">
           <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm z-10 rounded-full flex items-center justify-center shadow-md cursor-pointer swiper-custom-prev">
             <ArrowRight className="h-5 w-5 rotate-180" />

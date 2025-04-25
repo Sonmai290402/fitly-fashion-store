@@ -11,6 +11,7 @@ export type ProductFilters = {
 export type ProductData = {
   id?: string;
   title: string;
+  searchableTitle?: string;
   desc: string;
   price: number;
   sale_price: number;

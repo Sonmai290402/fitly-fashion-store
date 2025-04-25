@@ -88,7 +88,6 @@ const loadUserFromStorage = (): UserData | null => {
     return JSON.parse(storedUser) as UserData;
   } catch (e) {
     console.error("Error parsing stored user data:", e);
-    // If there's an error parsing, clear the invalid data
     localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
     return null;
   }

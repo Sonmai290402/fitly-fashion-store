@@ -30,7 +30,6 @@ interface AdminOrderState {
   loading: boolean;
   error: string | null;
 
-  // Filters and sorting
   statusFilter: OrderStatus | "all";
   dateFilter: DateFilterOption;
   searchQuery: string;
@@ -39,7 +38,6 @@ interface AdminOrderState {
   itemsPerPage: number;
   totalPages: number;
 
-  // Actions
   fetchAllOrders: () => Promise<void>;
   fetchOrderById: (orderId: string) => Promise<OrderData | null>;
   updateOrderStatus: (
@@ -52,7 +50,6 @@ interface AdminOrderState {
     orderData: Partial<OrderData>
   ) => Promise<void>;
 
-  // Filter actions
   setStatusFilter: (status: OrderStatus | "all") => void;
   setDateFilter: (dateFilter: DateFilterOption) => void;
   setSearchQuery: (query: string) => void;
@@ -67,7 +64,6 @@ export const useAdminOrderStore = create<AdminOrderState>((set, get) => ({
   loading: false,
   error: null,
 
-  // Filters and sorting
   statusFilter: "all",
   dateFilter: "all",
   searchQuery: "",
@@ -226,7 +222,6 @@ export const useAdminOrderStore = create<AdminOrderState>((set, get) => ({
         updatedAt: serverTimestamp(),
       });
 
-      // Update local state
       const { orders, currentOrder } = get();
       const updatedOrders = orders.map((order) =>
         order.id === orderId
@@ -238,7 +233,6 @@ export const useAdminOrderStore = create<AdminOrderState>((set, get) => ({
           : order
       );
 
-      // Re-apply filters
       const { statusFilter, dateFilter, searchQuery, sortBy, itemsPerPage } =
         get();
       const filteredOrders = applyFilters(
@@ -273,7 +267,6 @@ export const useAdminOrderStore = create<AdminOrderState>((set, get) => ({
     }
   },
 
-  // Filter actions
   setStatusFilter: (status) => {
     set((state) => {
       const filteredOrders = applyFilters(
@@ -292,7 +285,7 @@ export const useAdminOrderStore = create<AdminOrderState>((set, get) => ({
         statusFilter: status,
         filteredOrders,
         totalPages,
-        currentPage: 1, // Reset to first page when filtering
+        currentPage: 1,
       };
     });
   },

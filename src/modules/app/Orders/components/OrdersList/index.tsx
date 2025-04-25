@@ -10,7 +10,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useOrderStore } from "@/store/orderStore";
 import { OrderStatus } from "@/types/order.types";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { formatTimeStamp } from "@/utils/formatTimestamp";
+import { formatTimestamp } from "@/utils/formatTimestamp";
 
 export default function OrderList() {
   const { user } = useAuthStore();
@@ -82,7 +82,7 @@ export default function OrderList() {
                   <div>
                     <span className="text-sm text-gray-500">Order placed</span>
                     <p className="font-medium">
-                      {formatTimeStamp(order.createdAt)}
+                      {formatTimestamp(order.createdAt)}
                     </p>
                   </div>
                   <div>

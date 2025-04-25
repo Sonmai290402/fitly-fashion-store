@@ -27,13 +27,11 @@ export function RatingSummary({
 
   useEffect(() => {
     const loadRatingSummary = async () => {
-      // Check if we already have this product's ratings in the store
       if (productRatings[productId]) {
         setSummaryData(productRatings[productId]);
         return;
       }
 
-      // Otherwise fetch from database
       const data = await fetchProductRatingSummary(productId);
       if (data) {
         setSummaryData(data);
@@ -47,7 +45,6 @@ export function RatingSummary({
     return <RatingSummarySkeleton />;
   }
 
-  // If we don't have data yet, show a placeholder
   if (!summaryData) {
     return (
       <div className={`bg-white p-4 rounded-lg shadow-sm ${className}`}>

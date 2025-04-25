@@ -33,7 +33,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { fireDB } from "@/firebase/firebaseConfig";
-import { OrderData } from "@/types/order.types";
+import { OrderData, OrderStatus } from "@/types/order.types";
 import { formatDateTime } from "@/utils/formatDateTime";
 
 const updateOrderSchema = z.object({
@@ -59,6 +59,20 @@ export default function OrderStatusTabs({
   onOrderUpdate,
 }: OrderStatusTabsProps) {
   const [updating, setUpdating] = useState(false);
+
+  const statusMap: Record<
+    OrderStatus,
+    {
+      label: string;
+      variant: "default" | "secondary" | "destructive" | "success";
+    }
+  > = {
+    pending: { label: "Pending", variant: "secondary" },
+    processing: { label: "Processing", variant: "default" },
+    shipped: { label: "Shipped", variant: "default" },
+    delivered: { label: "Delivered", variant: "success" },
+    cancelled: { label: "Cancelled", variant: "destructive" },
+  };
 
   const form = useForm<UpdateOrderFormValues>({
     resolver: zodResolver(updateOrderSchema),
@@ -203,24 +217,26 @@ export default function OrderStatusTabs({
           <CardContent>
             <div className="relative border-l border-border pl-6 pb-2 overflow-y-auto max-h-[400px]">
               {order.statusHistory && order.statusHistory.length > 0 ? (
-                order.statusHistory.map((history, index) => (
-                  <div key={index} className="mb-6 relative">
-                    <div className="absolute -left-[25px] mt-1.5 h-4 w-4 rounded-full border border-white bg-primary"></div>
-                    <p className="font-semibold">
-                      Status changed to{" "}
-                      <Badge variant="outline">
-                        {history.status.charAt(0).toUpperCase() +
-                          history.status.slice(1)}
-                      </Badge>
-                    </p>
-                    <time className="block text-sm text-muted-foreground">
-                      {formatDateTime(history.timestamp)}
-                    </time>
-                    {history.comment && (
-                      <p className="mt-1 text-sm">{history.comment}</p>
-                    )}
-                  </div>
-                ))
+                order.statusHistory
+                  .slice()
+                  .reverse()
+                  .map((history, index) => (
+                    <div key={index} className="mb-6 relative">
+                      <div className="absolute -left-[25px] mt-1.5 h-4 w-4 rounded-full border border-white bg-primary"></div>
+                      <p className="font-semibold">
+                        Status changed to{" "}
+                        <Badge variant={statusMap[history.status].variant}>
+                          {statusMap[history.status].label}
+                        </Badge>
+                      </p>
+                      <time className="block text-sm text-muted-foreground">
+                        {formatDateTime(history.timestamp)}
+                      </time>
+                      {history.comment && (
+                        <p className="mt-1 text-sm">{history.comment}</p>
+                      )}
+                    </div>
+                  ))
               ) : (
                 <p className="text-muted-foreground">
                   No status history available

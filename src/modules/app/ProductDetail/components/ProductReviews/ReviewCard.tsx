@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuthStore } from "@/store/authStore";
 import { useReviewStore } from "@/store/reviewStore";
 import { ProductReview } from "@/types/review.types";
-import { formatTimeStamp } from "@/utils/formatTimestamp";
+import { formatTimestamp } from "@/utils/formatTimestamp";
 
 import { RatingStars } from "./RatingStars";
 
@@ -42,7 +42,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
   const hasVoted = !!userHelpfulVotes[review.id];
 
-  const formattedDate = formatTimeStamp(review.createdAt);
+  const formattedDate = formatTimestamp(review.createdAt);
 
   const handleToggleHelpful = async () => {
     if (isSubmitting) return;

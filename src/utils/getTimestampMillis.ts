@@ -7,5 +7,5 @@ export const getTimestampMillis = (
   if (typeof input === "string") return new Date(input).getTime();
   if (typeof input === "object" && "toDate" in input)
     return input.toDate().getTime();
-  return 0; // fallback nếu sai kiểu
+  return 0;
 };
