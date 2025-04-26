@@ -1,11 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ShoppingCart, Trash2, X } from "lucide-react";
+import { AlertCircle, ShoppingCart, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 import { RemoveScroll } from "react-remove-scroll";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,8 @@ type CartSlidePanelProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+type ConfirmationType = "selected" | "clear" | null;
+
 export default function CartSlidePanel({
   open,
   onOpenChange,
@@ -33,25 +36,34 @@ export default function CartSlidePanel({
   >({});
   const slidePanelRef = useRef<HTMLDivElement>(null);
 
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+
+  const [confirmationType, setConfirmationType] =
+    useState<ConfirmationType>(null);
+
   useEffect(() => {
     const quantities: Record<string, number> = {};
     items.forEach((item) => {
       quantities[item.id] = item.quantity;
     });
     setLocalQuantities(quantities);
-  }, [items]);
+
+    if (!confirmationType) {
+      setSelectedItems([]);
+    }
+  }, [items, confirmationType]);
 
   useEffect(() => {
     if (!open) return;
 
-    function handleClickOutside(event: MouseEvent) {
+    const handleClickOutside = (event: MouseEvent) => {
       if (
         slidePanelRef.current &&
         !slidePanelRef.current.contains(event.target as Node)
       ) {
         onOpenChange(false);
       }
-    }
+    };
 
     const timer = setTimeout(() => {
       document.addEventListener("mousedown", handleClickOutside);
@@ -66,23 +78,28 @@ export default function CartSlidePanel({
   useEffect(() => {
     if (!open) return;
 
-    function handleEscape(event: KeyboardEvent) {
+    const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onOpenChange(false);
+        if (confirmationType) {
+          setConfirmationType(null);
+        } else {
+          onOpenChange(false);
+        }
       }
-    }
+    };
 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [open, onOpenChange]);
+  }, [open, onOpenChange, confirmationType]);
 
   const subtotal = items.reduce((total: number, item) => {
-    const price = item.sale_price ?? item.price;
+    const price = item.sale_price || item.price;
     return total + price * item.quantity;
   }, 0);
 
-  console.log(items);
   const isEmpty = items.length === 0;
+  const isAllSelected = !isEmpty && selectedItems.length === items.length;
+  const hasSelected = selectedItems.length > 0;
 
   const handleQuantityChange = useCallback(
     async (itemId: string, newQuantity: number) => {
@@ -120,22 +137,74 @@ export default function CartSlidePanel({
     [localQuantities, handleQuantityChange]
   );
 
-  const handleRemoveItem = useCallback(
-    (itemId: string) => {
-      removeItem(itemId);
-      setLocalQuantities((prev) => {
-        const updated = { ...prev };
-        delete updated[itemId];
-        return updated;
-      });
-    },
-    [removeItem]
-  );
-
   const handleCheckout = useCallback(() => {
     onOpenChange(false);
     router.push("/checkout");
   }, [onOpenChange, router]);
+
+  const handleToggleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(items.map((item) => item.id));
+    }
+  }, [isAllSelected, items]);
+
+  const handleToggleSelectItem = useCallback((itemId: string) => {
+    setSelectedItems((prev) => {
+      if (prev.includes(itemId)) {
+        return prev.filter((id) => id !== itemId);
+      } else {
+        return [...prev, itemId];
+      }
+    });
+  }, []);
+
+  const handleDeleteSelected = useCallback(() => {
+    setConfirmationType("selected");
+  }, []);
+
+  const handleClearCart = useCallback(() => {
+    setConfirmationType("clear");
+  }, []);
+
+  const cancelConfirmation = useCallback(() => {
+    setConfirmationType(null);
+  }, []);
+
+  const confirmAction = useCallback(() => {
+    if (confirmationType === "selected") {
+      const itemCount = selectedItems.length;
+      selectedItems.forEach((itemId) => {
+        removeItem(itemId);
+      });
+      toast.success(
+        `${itemCount > 1 ? `${itemCount} items` : "Item"} deleted successfully`
+      );
+    } else if (confirmationType === "clear") {
+      clearCart();
+      toast.success("Cart cleared successfully");
+    }
+    setConfirmationType(null);
+  }, [confirmationType, selectedItems, removeItem, clearCart]);
+
+  const getConfirmationMessage = () => {
+    if (confirmationType === "selected") {
+      const count = selectedItems.length;
+      return {
+        title: `Delete ${count} ${count === 1 ? "item" : "items"}?`,
+        description: "Selected items will be removed from your cart.",
+      };
+    } else if (confirmationType === "clear") {
+      return {
+        title: "Clear entire cart?",
+        description: `All ${items.length} items will be removed from your cart.`,
+      };
+    }
+    return { title: "", description: "" };
+  };
+
+  const confirmationMessage = getConfirmationMessage();
 
   return (
     <AnimatePresence>
@@ -164,8 +233,8 @@ export default function CartSlidePanel({
                   duration: 0.3,
                 }}
               >
-                <div className="flex h-full flex-col overflow-hidden bg-white shadow-xl">
-                  <div className="px-4 py-6 sm:px-6 bg-white border-b">
+                <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900 shadow-xl">
+                  <div className="px-4 py-6 sm:px-6 bg-white dark:bg-gray-900 border-b">
                     <div className="flex items-center justify-between">
                       <h2 className="text-xl font-bold flex items-center gap-2">
                         <ShoppingCart className="h-5 w-5" />
@@ -182,6 +251,79 @@ export default function CartSlidePanel({
                       </Button>
                     </div>
                   </div>
+
+                  {!isEmpty && (
+                    <>
+                      <AnimatePresence>
+                        {confirmationType && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700 border-y px-4 py-3"
+                          >
+                            <div className="flex items-start">
+                              <div className="flex-shrink-0">
+                                <AlertCircle className="h-5 w-5 text-amber-500" />
+                              </div>
+                              <div className="ml-3 flex-1">
+                                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                  {confirmationMessage.title}
+                                </p>
+                                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                  {confirmationMessage.description}
+                                </p>
+                                <div className="mt-2 flex-shrink-0 flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={cancelConfirmation}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={confirmAction}
+                                  >
+                                    Confirm
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={isAllSelected}
+                            onCheckedChange={handleToggleSelectAll}
+                            id="select-all"
+                          />
+                          <label
+                            htmlFor="select-all"
+                            className="text-sm font-medium"
+                          >
+                            Select All
+                          </label>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleDeleteSelected}
+                          disabled={!hasSelected}
+                          className="flex items-center gap-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete{" "}
+                          {selectedItems.length > 0 &&
+                            `(${selectedItems.length})`}
+                        </Button>
+                      </div>
+                    </>
+                  )}
 
                   {isEmpty ? (
                     <div className="flex flex-col items-center justify-center flex-1 p-6">
@@ -204,7 +346,7 @@ export default function CartSlidePanel({
                     </div>
                   ) : (
                     <div className="flex-1 overflow-y-auto">
-                      <ul className="divide-y divide-gray-200">
+                      <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                         {items.map((item) => (
                           <motion.li
                             key={item.id}
@@ -216,7 +358,12 @@ export default function CartSlidePanel({
                             transition={{ duration: 0.2 }}
                           >
                             <div className="flex items-center justify-center">
-                              <Checkbox />
+                              <Checkbox
+                                checked={selectedItems.includes(item.id)}
+                                onCheckedChange={() =>
+                                  handleToggleSelectItem(item.id)
+                                }
+                              />
                             </div>
                             <Link
                               href={`/product/${item.productId || item.id}`}
@@ -241,17 +388,9 @@ export default function CartSlidePanel({
                                 >
                                   {item.title}
                                 </Link>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-gray-500 hover:text-red-500"
-                                  onClick={() => handleRemoveItem(item.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
                               </div>
 
-                              <div className="flex flex-wrap gap-2 mt-1">
+                              <div className="flex flex-wrap gap-1 mt-1">
                                 {item.color && <Badge>{item.color}</Badge>}
 
                                 {item.size && <Badge>Size: {item.size}</Badge>}
@@ -322,7 +461,7 @@ export default function CartSlidePanel({
                                       </span>
                                     </div>
                                   ) : (
-                                    <span className="text-sm line-through text-gray-500">
+                                    <span className="text-sm font-medium">
                                       {formatCurrency(item.price)}
                                     </span>
                                   )}
@@ -344,7 +483,7 @@ export default function CartSlidePanel({
                   )}
 
                   {!isEmpty && (
-                    <div className="border-t px-4 py-5 sm:px-6 space-y-4 bg-gray-50">
+                    <div className="border-t px-4 py-5 sm:px-6 space-y-4 bg-gray-50 dark:bg-gray-800">
                       <div className="flex justify-between items-center">
                         <span className="font-medium">
                           Subtotal (
@@ -363,7 +502,7 @@ export default function CartSlidePanel({
                       </div>
 
                       <p className="text-sm text-gray-500">
-                        Shipping and taxes calculated at checkout
+                        Free shipping on orders over 1.000.000đ
                       </p>
 
                       <div className="space-y-3">
@@ -378,7 +517,7 @@ export default function CartSlidePanel({
                         <Button
                           variant="outline"
                           className="w-full"
-                          onClick={() => clearCart()}
+                          onClick={handleClearCart}
                         >
                           Clear Cart
                         </Button>
