@@ -92,7 +92,6 @@ export default function CheckoutPage() {
         data.shipping,
         data.paymentMethod
       );
-      console.log(" onSubmit ~ orderId:", orderId);
 
       toast.success("Order placed successfully!");
 

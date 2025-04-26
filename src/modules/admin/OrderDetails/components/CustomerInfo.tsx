@@ -1,16 +1,30 @@
 import { Copy, Send } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useUserStore } from "@/store/userStore";
 import { OrderData } from "@/types/order.types";
+import { UserData } from "@/types/user.types";
 
 interface CustomerInfoProps {
   order: OrderData;
 }
 
 export default function CustomerInfo({ order }: CustomerInfoProps) {
+  const { getUserById } = useUserStore();
+  const [user, setUser] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (order.userId) {
+        const userData = await getUserById(order.userId);
+        setUser(userData);
+      }
+    };
+    fetchUser();
+  }, [order.userId, getUserById]);
   const copyToClipboard = (text: string, message: string) => {
     navigator.clipboard.writeText(text);
     toast.success(message);
@@ -28,6 +42,13 @@ export default function CustomerInfo({ order }: CustomerInfoProps) {
               Customer Name
             </h3>
             <p>{order.shippingAddress.fullName}</p>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">
+              Username
+            </h3>
+            <p>{user?.username}</p>
           </div>
 
           <div>

@@ -22,14 +22,12 @@ type CartSlidePanelProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-type ConfirmationType = "selected" | "clear" | null;
-
 export default function CartSlidePanel({
   open,
   onOpenChange,
 }: CartSlidePanelProps) {
   const router = useRouter();
-  const { items, removeItem, updateQuantity, clearCart } = useCartStore();
+  const { items, removeItem, updateQuantity } = useCartStore();
   const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
   const [localQuantities, setLocalQuantities] = useState<
     Record<string, number>
@@ -37,9 +35,7 @@ export default function CartSlidePanel({
   const slidePanelRef = useRef<HTMLDivElement>(null);
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-
-  const [confirmationType, setConfirmationType] =
-    useState<ConfirmationType>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   useEffect(() => {
     const quantities: Record<string, number> = {};
@@ -48,22 +44,22 @@ export default function CartSlidePanel({
     });
     setLocalQuantities(quantities);
 
-    if (!confirmationType) {
+    if (!showDeleteConfirmation) {
       setSelectedItems([]);
     }
-  }, [items, confirmationType]);
+  }, [items, showDeleteConfirmation]);
 
   useEffect(() => {
     if (!open) return;
 
-    const handleClickOutside = (event: MouseEvent) => {
+    function handleClickOutside(event: MouseEvent) {
       if (
         slidePanelRef.current &&
         !slidePanelRef.current.contains(event.target as Node)
       ) {
         onOpenChange(false);
       }
-    };
+    }
 
     const timer = setTimeout(() => {
       document.addEventListener("mousedown", handleClickOutside);
@@ -78,19 +74,19 @@ export default function CartSlidePanel({
   useEffect(() => {
     if (!open) return;
 
-    const handleEscape = (event: KeyboardEvent) => {
+    function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        if (confirmationType) {
-          setConfirmationType(null);
+        if (showDeleteConfirmation) {
+          setShowDeleteConfirmation(false);
         } else {
           onOpenChange(false);
         }
       }
-    };
+    }
 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [open, onOpenChange, confirmationType]);
+  }, [open, onOpenChange, showDeleteConfirmation]);
 
   const subtotal = items.reduce((total: number, item) => {
     const price = item.sale_price || item.price;
@@ -142,6 +138,7 @@ export default function CartSlidePanel({
     router.push("/checkout");
   }, [onOpenChange, router]);
 
+  // Added for selection functionality
   const handleToggleSelectAll = useCallback(() => {
     if (isAllSelected) {
       setSelectedItems([]);
@@ -161,50 +158,26 @@ export default function CartSlidePanel({
   }, []);
 
   const handleDeleteSelected = useCallback(() => {
-    setConfirmationType("selected");
+    setShowDeleteConfirmation(true);
   }, []);
 
-  const handleClearCart = useCallback(() => {
-    setConfirmationType("clear");
+  const cancelDelete = useCallback(() => {
+    setShowDeleteConfirmation(false);
   }, []);
 
-  const cancelConfirmation = useCallback(() => {
-    setConfirmationType(null);
-  }, []);
+  const confirmDeleteSelected = useCallback(() => {
+    const itemCount = selectedItems.length;
+    selectedItems.forEach((itemId) => {
+      removeItem(itemId);
+    });
+    setSelectedItems([]);
+    setShowDeleteConfirmation(false);
 
-  const confirmAction = useCallback(() => {
-    if (confirmationType === "selected") {
-      const itemCount = selectedItems.length;
-      selectedItems.forEach((itemId) => {
-        removeItem(itemId);
-      });
-      toast.success(
-        `${itemCount > 1 ? `${itemCount} items` : "Item"} deleted successfully`
-      );
-    } else if (confirmationType === "clear") {
-      clearCart();
-      toast.success("Cart cleared successfully");
-    }
-    setConfirmationType(null);
-  }, [confirmationType, selectedItems, removeItem, clearCart]);
-
-  const getConfirmationMessage = () => {
-    if (confirmationType === "selected") {
-      const count = selectedItems.length;
-      return {
-        title: `Delete ${count} ${count === 1 ? "item" : "items"}?`,
-        description: "Selected items will be removed from your cart.",
-      };
-    } else if (confirmationType === "clear") {
-      return {
-        title: "Clear entire cart?",
-        description: `All ${items.length} items will be removed from your cart.`,
-      };
-    }
-    return { title: "", description: "" };
-  };
-
-  const confirmationMessage = getConfirmationMessage();
+    // Show success toast
+    toast.success(
+      `${itemCount > 1 ? `${itemCount} items` : "Item"} deleted successfully`
+    );
+  }, [selectedItems, removeItem]);
 
   return (
     <AnimatePresence>
@@ -255,7 +228,7 @@ export default function CartSlidePanel({
                   {!isEmpty && (
                     <>
                       <AnimatePresence>
-                        {confirmationType && (
+                        {showDeleteConfirmation && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
@@ -268,25 +241,26 @@ export default function CartSlidePanel({
                               </div>
                               <div className="ml-3 flex-1">
                                 <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                  {confirmationMessage.title}
-                                </p>
-                                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                                  {confirmationMessage.description}
+                                  Delete {selectedItems.length}{" "}
+                                  {selectedItems.length === 1
+                                    ? "item"
+                                    : "items"}
+                                  ?
                                 </p>
                                 <div className="mt-2 flex-shrink-0 flex gap-2">
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={cancelConfirmation}
+                                    onClick={cancelDelete}
                                   >
                                     Cancel
                                   </Button>
                                   <Button
                                     variant="destructive"
                                     size="sm"
-                                    onClick={confirmAction}
+                                    onClick={confirmDeleteSelected}
                                   >
-                                    Confirm
+                                    Delete
                                   </Button>
                                 </div>
                               </div>
@@ -295,7 +269,7 @@ export default function CartSlidePanel({
                         )}
                       </AnimatePresence>
 
-                      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b flex items-center justify-between">
+                      <div className="px-4 py-3 sm:px-6 bg-gray-50 dark:bg-gray-800 border-b flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Checkbox
                             checked={isAllSelected}
@@ -380,17 +354,15 @@ export default function CartSlidePanel({
                             </Link>
 
                             <div className="flex-1 flex flex-col">
-                              <div className="flex justify-between">
-                                <Link
-                                  href={`/product/${item.productId || item.id}`}
-                                  className="font-medium text-sm line-clamp-2 hover:text-primary transition-colors"
-                                  onClick={() => onOpenChange(false)}
-                                >
-                                  {item.title}
-                                </Link>
-                              </div>
+                              <Link
+                                href={`/product/${item.productId || item.id}`}
+                                className="font-medium text-sm line-clamp-2 hover:text-primary transition-colors"
+                                onClick={() => onOpenChange(false)}
+                              >
+                                {item.title}
+                              </Link>
 
-                              <div className="flex flex-wrap gap-1 mt-1">
+                              <div className="flex flex-wrap gap-2 mt-1">
                                 {item.color && <Badge>{item.color}</Badge>}
 
                                 {item.size && <Badge>Size: {item.size}</Badge>}
@@ -469,7 +441,7 @@ export default function CartSlidePanel({
                                   <p className="text-xs text-gray-500">
                                     Total:{" "}
                                     {formatCurrency(
-                                      (item.sale_price ?? item.price) *
+                                      (item.sale_price || item.price) *
                                         item.quantity
                                     )}
                                   </p>
@@ -505,23 +477,13 @@ export default function CartSlidePanel({
                         Free shipping on orders over 1.000.000đ
                       </p>
 
-                      <div className="space-y-3">
-                        <Button
-                          className="w-full py-6 text-base"
-                          onClick={handleCheckout}
-                          size="lg"
-                        >
-                          Checkout
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          onClick={handleClearCart}
-                        >
-                          Clear Cart
-                        </Button>
-                      </div>
+                      <Button
+                        className="w-full py-6 text-base"
+                        onClick={handleCheckout}
+                        size="lg"
+                      >
+                        Checkout
+                      </Button>
                     </div>
                   )}
                 </div>

@@ -1,4 +1,4 @@
-import { Download, RefreshCw } from "lucide-react";
+import { Download } from "lucide-react";
 import React from "react";
 import * as XLSX from "xlsx";
 
@@ -7,7 +7,7 @@ import { useAdminOrderStore } from "@/store/adminOrderStore";
 import { formatTimestamp } from "@/utils/formatTimestamp";
 
 export default function HeaderActions() {
-  const { filteredOrders, loading, fetchAllOrders } = useAdminOrderStore();
+  const { filteredOrders } = useAdminOrderStore();
 
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(
@@ -35,12 +35,6 @@ export default function HeaderActions() {
 
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" onClick={fetchAllOrders} disabled={loading}>
-        <RefreshCw
-          className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
-        />
-        Refresh
-      </Button>
       <Button variant="outline" onClick={exportToExcel}>
         <Download className="h-4 w-4 mr-2" />
         Export

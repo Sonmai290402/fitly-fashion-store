@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Heart, Loader, Minus, Plus, ShoppingCart } from "lucide-react";
+import { Loader, Minus, Plus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { memo, useCallback, useMemo, useState } from "react";
@@ -28,8 +28,6 @@ type ProductCardProps = {
 
 const ProductCard = ({
   product,
-  wishlistActive = false,
-  onToggleWishlist,
   className,
   showQuantity = false,
 }: ProductCardProps) => {
@@ -61,14 +59,6 @@ const ProductCard = ({
       Math.round(((product.price - product.sale_price) / product.price) * 100)
     );
   }, [product.sale_price, product.price]);
-
-  const handleWishlistToggle = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onToggleWishlist) {
-      onToggleWishlist(product.id || "");
-    }
-  };
 
   const availableSizes = useMemo(() => {
     return selectedColor?.sizes?.filter((size) => size.inStock > 0) || [];
@@ -138,22 +128,6 @@ const ProductCard = ({
           <Badge variant="destructive" className="absolute top-2 left-2 z-10">
             -{discountPercentage}%
           </Badge>
-        )}
-
-        {onToggleWishlist && (
-          <Button
-            onClick={handleWishlistToggle}
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 z-10 bg-white/80 backdrop-blur-sm hover:bg-white/90 rounded-full size-8"
-          >
-            <Heart
-              className={clsx(
-                "size-4",
-                wishlistActive ? "fill-red-500 text-red-500" : "text-gray-700"
-              )}
-            />
-          </Button>
         )}
 
         <Link href={productUrl} className="block w-full h-full">

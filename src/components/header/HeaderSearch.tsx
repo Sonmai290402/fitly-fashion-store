@@ -106,12 +106,6 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
                       </div>
                     </form>
                   </div>
-                  <button
-                    onClick={handleClose}
-                    className="ml-2 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
@@ -144,16 +138,9 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search..."
+                  placeholder="Search products..."
                   className="w-full pl-9 pr-8 py-2 rounded-full border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X className="h-4 w-4" />
-                </button>
               </div>
             </form>
 

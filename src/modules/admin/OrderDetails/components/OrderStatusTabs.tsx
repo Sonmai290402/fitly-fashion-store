@@ -131,7 +131,7 @@ export default function OrderStatusTabs({
     <Tabs defaultValue="update">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="update">Update Status</TabsTrigger>
-        <TabsTrigger value="history">Order Timeline</TabsTrigger>
+        <TabsTrigger value="history">Order Tracking</TabsTrigger>
       </TabsList>
 
       <TabsContent value="update">
@@ -209,13 +209,13 @@ export default function OrderStatusTabs({
       <TabsContent value="history">
         <Card>
           <CardHeader>
-            <CardTitle>Order Timeline</CardTitle>
+            <CardTitle>Order Tracking</CardTitle>
             <CardDescription>
               History of status changes for this order
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="relative border-l border-border pl-6 pb-2 overflow-y-auto max-h-[400px]">
+            <div className="relative pl-6 pb-2 overflow-y-auto max-h-[400px]">
               {order.statusHistory && order.statusHistory.length > 0 ? (
                 order.statusHistory
                   .slice()

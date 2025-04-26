@@ -61,9 +61,11 @@ export default function OrderConfirmation() {
         </p>
       </div>
 
-      <div className="bg-white border rounded-lg p-6 shadow-sm mb-8">
-        <h2 className="text-lg font-bold mb-4">Order Summary</h2>
-        <ul className="divide-y">
+      <div className="bg-white border rounded-lg shadow-sm mb-8">
+        <h2 className="text-lg font-bold mb-4 px-6 py-4 text-center">
+          Order Summary
+        </h2>
+        <ul className="divide-y overflow-y-auto max-h-96 px-6">
           {currentOrder.items.map((item) => (
             <li key={item.id} className="py-3 flex justify-between">
               <div>
@@ -79,7 +81,7 @@ export default function OrderConfirmation() {
             </li>
           ))}
         </ul>
-        <div>
+        <div className="bg-gray-50 px-6 py-4">
           <div className="flex justify-between mt-4">
             <span className="text-sm text-gray-500">Subtotal</span>
             <span className="font-medium">
@@ -121,12 +123,6 @@ export default function OrderConfirmation() {
           <p>Method:</p>
           <p className="font-medium">
             {formatPaymentMethod(currentOrder.paymentMethod)}
-          </p>
-        </div>
-        <div className="flex justify-between mt-2">
-          <p>Status:</p>
-          <p className="font-medium">
-            {currentOrder.paymentStatus === "paid" ? "Paid" : "Pending"}
           </p>
         </div>
       </div>

@@ -10,7 +10,7 @@ interface OrderStatusBadgeProps {
 export default function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
   const statusConfig = {
     pending: { label: "Pending", variant: "outline" as const },
-    processing: { label: "Processing", variant: "secondary" as const },
+    processing: { label: "Processing", variant: "default" as const },
     shipped: { label: "Shipped", variant: "default" as const },
     delivered: { label: "Delivered", variant: "success" as const },
     cancelled: { label: "Cancelled", variant: "destructive" as const },
