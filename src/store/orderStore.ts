@@ -1,4 +1,5 @@
 import {
+  arrayUnion,
   collection,
   doc,
   getDoc,
@@ -28,6 +29,7 @@ interface OrderState {
     status: OrderStatus,
     comment?: string
   ) => Promise<void>;
+  cancelOrder: (orderId: string, cancellationReason: string) => Promise<void>;
 }
 
 export const useOrderStore = create<OrderState>((set, get) => ({
@@ -154,6 +156,54 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     } catch (error) {
       console.error("Error updating order status:", error);
       set({ error: "Failed to update order status", loading: false });
+    }
+  },
+
+  cancelOrder: async (orderId, cancellationReason) => {
+    try {
+      set({ loading: true, error: null });
+
+      const orderRef = doc(fireDB, "orders", orderId);
+
+      await updateDoc(orderRef, {
+        status: "cancelled",
+        cancellationReason,
+        statusHistory: arrayUnion({
+          status: "cancelled",
+          timestamp: new Date().toISOString(),
+          comment: cancellationReason || "Cancelled by customer",
+        }),
+        updatedAt: serverTimestamp(),
+      });
+
+      set((state) => ({
+        orders: state.orders.map((order) =>
+          order.id === orderId
+            ? {
+                ...order,
+                status: "cancelled",
+                cancellationReason,
+                updatedAt: new Date().toISOString(),
+                statusHistory: [
+                  ...(order.statusHistory || []),
+                  {
+                    status: "cancelled",
+                    timestamp: new Date().toISOString(),
+                    comment: cancellationReason || "Cancelled by customer",
+                  },
+                ],
+              }
+            : order
+        ),
+        loading: false,
+      }));
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      set({
+        error: "Failed to cancel order. Please try again.",
+        loading: false,
+      });
+      throw error;
     }
   },
 }));

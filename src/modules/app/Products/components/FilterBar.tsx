@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { commonColors, commonSizes } from "@/constants";
 import { useCategoryStore } from "@/store/categoryStore";
+import { useColorStore } from "@/store/colorStore";
 import { useGenderStore } from "@/store/genderStore";
+import { useSizeStore } from "@/store/sizeStore";
 import { ProductFilters } from "@/types/product.types";
 
 type ProductFilterBarProps = {
@@ -36,6 +37,13 @@ export default function FilterBar({
 
   const { genders, fetchGenders } = useGenderStore();
   const { categories, fetchCategories } = useCategoryStore();
+  const { colors, fetchColors } = useColorStore();
+  const { sizes, fetchSizes } = useSizeStore();
+
+  useEffect(() => {
+    fetchColors();
+    fetchSizes();
+  }, [fetchColors, fetchSizes]);
 
   const selectedGender = genders.find(
     (g) => g.title.toLowerCase() === initialFilters.gender
@@ -342,7 +350,7 @@ export default function FilterBar({
 
         {openSections.color && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {commonColors.map((color) => {
+            {colors.map((color) => {
               const colorValue = color.name.toLowerCase();
               const isSelected = initialFilters.color === colorValue;
 
@@ -382,15 +390,17 @@ export default function FilterBar({
 
         {openSections.size && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {commonSizes.map((size) => (
+            {sizes.map((size) => (
               <Button
-                key={size}
-                onClick={() => toggleFilterValue("size", size)}
-                variant={initialFilters.size === size ? "default" : "outline"}
+                key={size.name}
+                onClick={() => toggleFilterValue("size", size.name)}
+                variant={
+                  initialFilters.size === size.name ? "default" : "outline"
+                }
                 size="sm"
                 className="h-9 px-3"
               >
-                {size}
+                {size.name}
               </Button>
             ))}
           </div>

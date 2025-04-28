@@ -93,7 +93,7 @@ export default function MainProductImageUploader({
 
   return (
     <div className="space-y-2">
-      <FormLabel>Main Product Image</FormLabel>
+      <FormLabel>Thumbnail</FormLabel>
       <div className="space-y-4">
         {previewImage ? (
           <div className="relative w-full h-40 border rounded-lg overflow-hidden">
@@ -139,7 +139,7 @@ export default function MainProductImageUploader({
               ) : (
                 <>
                   <Upload className="mr-2" />
-                  <span>Upload Main Product Image</span>
+                  <span>Upload Thumbnail</span>
                 </>
               )}
             </div>

@@ -1,27 +1,7 @@
 "use client";
 
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-  VisibilityState,
-} from "@tanstack/react-table";
-import {
-  ArrowUpDown,
-  ChevronDown,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -37,23 +17,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  createActionsColumn,
+  createSelectionColumn,
+  createSortableHeader,
+} from "@/components/ui/data-table/columns";
+import { DataTable } from "@/components/ui/data-table/DataTable";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useProductStore } from "@/store/productStore";
 import { ProductData } from "@/types/product.types";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -78,50 +48,19 @@ export default function ProductList() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
 
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
 
+  // Selection column with checkbox
+  const selectionColumn = createSelectionColumn<ProductData>();
+
+  // Define columns
   const columns: ColumnDef<ProductData>[] = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
+    selectionColumn,
     {
       accessorKey: "title",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Product
-            <ArrowUpDown className="ml-2 size-4" />
-          </Button>
-        );
-      },
+      header: createSortableHeader("title", "Product"),
       cell: ({ row }) => {
         const product = row.original;
         const imageUrl =
@@ -146,17 +85,7 @@ export default function ProductList() {
     },
     {
       accessorKey: "price",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Price
-            <ArrowUpDown className="ml-2 size-4" />
-          </Button>
-        );
-      },
+      header: createSortableHeader("price", "Price"),
       cell: ({ row }) => {
         const product = row.original;
 
@@ -202,72 +131,42 @@ export default function ProductList() {
         );
       },
     },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const product = row.original;
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="size-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  setEditingProduct(product);
-                  setIsProductModalOpen(true);
-                }}
-              >
-                <Pencil className="mr-2 size-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  setDeleteProductId(product.id as string);
-                  setIsDeleteDialogOpen(true);
-                }}
-                className="text-red-600 focus:text-red-600"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
   ];
 
-  const table = useReactTable({
-    data: products,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-  });
+  const handleOpenEditModal = (product: ProductData) => {
+    setEditingProduct(product);
+    setIsProductModalOpen(true);
+  };
 
-  const selectedProductIds = table
-    .getFilteredRowModel()
-    .rows.filter((row) => row.getIsSelected())
-    .map((row) => row.original.id as string)
-    .filter(Boolean);
+  const handleOpenDeleteDialog = (productId: string) => {
+    setDeleteProductId(productId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Actions column with edit and delete
+  const actionsColumn = createActionsColumn<ProductData>((product) => [
+    <DropdownMenuItem key="edit" onClick={() => handleOpenEditModal(product)}>
+      <Pencil className="mr-2 size-4" />
+      Edit
+    </DropdownMenuItem>,
+    <DropdownMenuItem
+      key="delete"
+      onClick={() => handleOpenDeleteDialog(product.id as string)}
+      className="text-red-600 focus:text-red-600"
+    >
+      <Trash2 className="mr-2 h-4 w-4" />
+      Delete
+    </DropdownMenuItem>,
+  ]);
+
+  const allColumns = [...columns, actionsColumn];
+
+  const selectedProductIds = Object.keys(rowSelection)
+    .map((index) => {
+      const productIndex = parseInt(index);
+      return products[productIndex] ? products[productIndex].id : null;
+    })
+    .filter((id): id is string => id !== null);
 
   const handleAddProduct = () => {
     setEditingProduct(null);
@@ -289,9 +188,7 @@ export default function ProductList() {
   const handleBulkDelete = async () => {
     try {
       if (selectedProductIds.length === 0) return;
-
       await bulkDeleteProducts(selectedProductIds);
-
       setRowSelection({});
     } catch (error) {
       console.log("handleBulkDelete ~ error:", error);
@@ -299,6 +196,18 @@ export default function ProductList() {
       setIsBulkDeleteDialogOpen(false);
     }
   };
+
+  const bulkDeleteButton = (
+    <Button
+      variant="destructive"
+      size="sm"
+      onClick={() => setIsBulkDeleteDialogOpen(true)}
+      className="h-8 px-3"
+    >
+      <Trash2 className="mr-1 size-4" />
+      Delete Selected
+    </Button>
+  );
 
   return (
     <div className="container py-10">
@@ -309,162 +218,22 @@ export default function ProductList() {
         </Button>
       </div>
 
-      {selectedProductIds.length > 0 && (
-        <div className="bg-primary/5 rounded-lg mb-4 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-white">
-              {selectedProductIds.length} selected
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRowSelection({})}
-              className="h-8 px-2 text-sm"
-            >
-              <X className="mr-1 size-4" />
-              Clear selection
-            </Button>
-          </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsBulkDeleteDialogOpen(true)}
-            className="h-8 px-3"
-          >
-            <Trash2 className="mr-1 size-4" />
-            Delete Selected
-          </Button>
-        </div>
-      )}
-
-      <div className="rounded-md border bg-white">
-        <div className="flex items-center gap-2 p-4">
-          <Search className="h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search product by name..."
-            value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("title")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm border-none shadow-none focus-visible:ring-0"
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuItem
-                      key={column.id}
-                      className="capitalize"
-                      onClick={() =>
-                        column.toggleVisibility(!column.getIsVisible())
-                      }
-                    >
-                      <span className="mr-2">
-                        {column.getIsVisible() ? "✓" : ""}
-                      </span>
-                      {column.id}
-                    </DropdownMenuItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  {loading ? (
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full size-8 border-b-2 border-primary" />
-                    </div>
-                  ) : (
-                    "No products found"
-                  )}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <div className="flex items-center justify-between space-x-2 p-4 border-t">
-          <div className="text-sm text-muted-foreground">
-            {selectedProductIds.length > 0 ? (
-              <span>
-                Selected <strong>{selectedProductIds.length}</strong> of{" "}
-                {table.getFilteredRowModel().rows.length} products
-              </span>
-            ) : (
-              <span>
-                Showing {table.getRowModel().rows.length} of {products.length}{" "}
-                products
-              </span>
-            )}
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DataTable
+        columns={allColumns}
+        data={products}
+        loading={loading}
+        searchKey="title"
+        searchPlaceholder="Search product by name..."
+        enableRowSelection
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        selectedItems={selectedProductIds.length}
+        onClearSelection={() => setRowSelection({})}
+        selectionActions={bulkDeleteButton}
+        enablePagination
+        pageSize={10}
+        itemsCount={products.length}
+      />
 
       <ProductFormModal
         open={isProductModalOpen}

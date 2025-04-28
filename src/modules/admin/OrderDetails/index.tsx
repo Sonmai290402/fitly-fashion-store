@@ -107,12 +107,10 @@ export default function AdminOrderDetail() {
         <div className="lg:col-span-2 space-y-6">
           <OrderItems order={order} />
 
-          <div className="print:hidden">
-            <OrderStatusTabs
-              order={order}
-              onOrderUpdate={(updatedOrder) => setOrder(updatedOrder)}
-            />
-          </div>
+          <OrderStatusTabs
+            order={order}
+            onOrderUpdate={(updatedOrder) => setOrder(updatedOrder)}
+          />
         </div>
 
         <div className="space-y-6">

@@ -37,7 +37,7 @@ export default function HeaderActions() {
     <div className="flex items-center gap-2">
       <Button variant="outline" onClick={exportToExcel}>
         <Download className="h-4 w-4 mr-2" />
-        Export
+        Export Excel
       </Button>
     </div>
   );

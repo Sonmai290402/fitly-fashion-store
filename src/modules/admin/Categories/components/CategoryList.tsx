@@ -1,31 +1,9 @@
 "use client";
 
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-  VisibilityState,
-} from "@tanstack/react-table";
-import {
-  ArrowUpDown,
-  ChevronDown,
-  Eye,
-  EyeOff,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+import { Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   AlertDialog,
@@ -39,23 +17,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  createActionsColumn,
+  createSelectionColumn,
+  createSortableHeader,
+} from "@/components/ui/data-table/columns";
+import { DataTable } from "@/components/ui/data-table/DataTable";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useGenderStore } from "@/store/genderStore";
 import { CategoryData } from "@/types/category.types";
@@ -72,24 +40,20 @@ export default function CategoryManagement() {
     bulkDeleteCategories,
   } = useCategoryStore();
 
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  // States for modals and selection
   const [rowSelection, setRowSelection] = useState({});
-
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryData | null>(
     null
   );
-
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
 
   const selectedCategoryIds = Object.keys(rowSelection)
     .map((index) => {
-      const productIndex = parseInt(index);
-      return categories[productIndex] ? categories[productIndex].id : null;
+      const categoryIndex = parseInt(index);
+      return categories[categoryIndex] ? categories[categoryIndex].id : null;
     })
     .filter((id): id is string => id !== null);
 
@@ -98,43 +62,14 @@ export default function CategoryManagement() {
     fetchGenders();
   }, [fetchCategories, fetchGenders]);
 
-  const columns: ColumnDef<CategoryData>[] = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
+  // Define columns
+  const selectionColumn = createSelectionColumn<CategoryData>();
 
+  const columns: ColumnDef<CategoryData>[] = [
+    selectionColumn,
     {
       accessorKey: "title",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Category
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: createSortableHeader("title", "Category"),
       cell: ({ row }) => {
         const imageUrl = row.original.image;
         const title = row.original.title;
@@ -155,7 +90,6 @@ export default function CategoryManagement() {
                 </div>
               )}
             </div>
-
             <span className="font-medium">{title}</span>
           </div>
         );
@@ -163,17 +97,7 @@ export default function CategoryManagement() {
     },
     {
       accessorKey: "genderId",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Gender
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: createSortableHeader("genderId", "Gender"),
       cell: ({ row }) => {
         const genderId = row.getValue("genderId") as string;
         const gender = genders.find((g) => g.id === genderId);
@@ -214,61 +138,7 @@ export default function CategoryManagement() {
         );
       },
     },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const category = row.original;
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleEditCategory(category)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  setDeleteCategoryId(category.id as string);
-                  setIsDeleteDialogOpen(true);
-                }}
-                className="text-red-600 focus:text-red-600"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
   ];
-
-  const table = useReactTable({
-    data: categories,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-  });
 
   const handleAddCategory = () => {
     setEditingCategory(null);
@@ -296,9 +166,7 @@ export default function CategoryManagement() {
   const handleBulkDelete = async () => {
     try {
       if (selectedCategoryIds.length === 0) return;
-
       await bulkDeleteCategories(selectedCategoryIds);
-
       setRowSelection({});
     } catch (error) {
       console.error("Error bulk deleting categories:", error);
@@ -306,6 +174,40 @@ export default function CategoryManagement() {
       setIsBulkDeleteDialogOpen(false);
     }
   };
+
+  const actionsColumn = createActionsColumn<CategoryData>((category) => [
+    <DropdownMenuItem key="edit" onClick={() => handleEditCategory(category)}>
+      <Pencil className="mr-2 h-4 w-4" />
+      Edit
+    </DropdownMenuItem>,
+    <DropdownMenuItem
+      key="delete"
+      onClick={() => {
+        setDeleteCategoryId(category.id as string);
+        setIsDeleteDialogOpen(true);
+      }}
+      className="text-red-600 focus:text-red-600"
+    >
+      <Trash2 className="mr-2 h-4 w-4" />
+      Delete
+    </DropdownMenuItem>,
+  ]);
+
+  const allColumns = [...columns, actionsColumn];
+
+  const handleClearSelection = () => setRowSelection({});
+
+  const bulkDeleteButton = (
+    <Button
+      variant="destructive"
+      size="sm"
+      onClick={() => setIsBulkDeleteDialogOpen(true)}
+      className="h-8 px-3"
+    >
+      <Trash2 className="mr-1 h-4 w-4" />
+      Delete Selected
+    </Button>
+  );
 
   return (
     <div className="container py-10">
@@ -316,162 +218,19 @@ export default function CategoryManagement() {
         </Button>
       </div>
 
-      {selectedCategoryIds.length > 0 && (
-        <div className="bg-primary/5 rounded-lg mb-4 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-white">
-              {selectedCategoryIds.length} selected
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRowSelection({})}
-              className="h-8 px-2 text-sm"
-            >
-              <X className="mr-1 h-4 w-4" />
-              Clear selection
-            </Button>
-          </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsBulkDeleteDialogOpen(true)}
-            className="h-8 px-3"
-          >
-            <Trash2 className="mr-1 h-4 w-4" />
-            Delete Selected
-          </Button>
-        </div>
-      )}
-
-      <div className="rounded-md border bg-white">
-        <div className="flex items-center gap-2 p-4">
-          <Search className="h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search by title..."
-            value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("title")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm border-none shadow-none focus-visible:ring-0"
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuItem
-                      key={column.id}
-                      className="capitalize"
-                      onClick={() =>
-                        column.toggleVisibility(!column.getIsVisible())
-                      }
-                    >
-                      <span className="mr-2">
-                        {column.getIsVisible() ? "✓" : ""}
-                      </span>
-                      {column.id}
-                    </DropdownMenuItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  {loading ? (
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    </div>
-                  ) : (
-                    "No categories found"
-                  )}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <div className="flex items-center justify-end space-x-2 p-4 border-t">
-          <div className="flex-1 text-sm text-muted-foreground">
-            {selectedCategoryIds.length > 0 ? (
-              <span>
-                Selected <strong>{selectedCategoryIds.length}</strong> of{" "}
-                {table.getFilteredRowModel().rows.length} categories
-              </span>
-            ) : (
-              <span>
-                Showing {table.getRowModel().rows.length} of {categories.length}{" "}
-                categories
-              </span>
-            )}
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DataTable
+        columns={allColumns}
+        data={categories}
+        loading={loading}
+        searchKey="title"
+        searchPlaceholder="Search by title..."
+        enableRowSelection
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        selectedItems={selectedCategoryIds.length}
+        onClearSelection={handleClearSelection}
+        selectionActions={bulkDeleteButton}
+      />
 
       <CategoryFormModal
         open={isCategoryModalOpen}

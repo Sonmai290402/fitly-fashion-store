@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { commonColors } from "@/constants";
 
 import MultipleImageSelector from "./MultipleImageSelector";
-import SizeInput from "./SizeInput";
+import { SizeInput } from "./SizeInput";
 
 export default function ColorInput({ nestIndex }: { nestIndex: number }) {
   const { register, setValue, formState, watch } = useFormContext();
@@ -102,7 +102,7 @@ export default function ColorInput({ nestIndex }: { nestIndex: number }) {
 
   return (
     <div className="border rounded-md p-4 mt-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 items-start gap-4">
         <FormItem>
           <FormLabel>Color Name</FormLabel>
           <FormControl>

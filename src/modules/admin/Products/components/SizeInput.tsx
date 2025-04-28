@@ -25,7 +25,7 @@ type ProductFormValues = {
   }>;
 };
 
-export default function SizeInput({ colorIndex }: SizeInputProps) {
+export const SizeInput = ({ colorIndex }: SizeInputProps) => {
   const { control, register, formState } = useFormContext<ProductFormValues>();
 
   const { fields, append, remove } = useFieldArray({
@@ -44,8 +44,12 @@ export default function SizeInput({ colorIndex }: SizeInputProps) {
       : [];
 
   const handleAddCommonSize = (sizeName: string) => {
-    const sizeExists = fields.some((field) => field.name === sizeName);
-    if (!sizeExists) {
+    const existingSizeIndex = fields.findIndex(
+      (field) => field.name === sizeName
+    );
+    if (existingSizeIndex >= 0) {
+      remove(existingSizeIndex);
+    } else {
       append({ name: sizeName, inStock: 0 });
     }
   };
@@ -59,21 +63,20 @@ export default function SizeInput({ colorIndex }: SizeInputProps) {
       </div>
 
       <div className="flex flex-wrap gap-2 my-3">
-        {commonSizes.map((size) => (
-          <Button
-            key={size}
-            type="button"
-            variant="ghost"
-            onClick={() => handleAddCommonSize(size)}
-            className={`px-3 py-1 ${
-              fields.some((field) => field.name === size)
-                ? "bg-primary text-primary-foreground"
-                : ""
-            }`}
-          >
-            {size}
-          </Button>
-        ))}
+        {commonSizes.map((size) => {
+          const isSelected = fields.some((field) => field.name === size);
+          return (
+            <Button
+              key={size}
+              type="button"
+              variant={isSelected ? "default" : "outline"}
+              onClick={() => handleAddCommonSize(size)}
+              className="px-3 py-1"
+            >
+              {size}
+            </Button>
+          );
+        })}
       </div>
 
       {colorErrors &&
@@ -163,4 +166,4 @@ export default function SizeInput({ colorIndex }: SizeInputProps) {
       </Button>
     </div>
   );
-}
+};

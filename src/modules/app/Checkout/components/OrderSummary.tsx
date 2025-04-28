@@ -25,16 +25,12 @@ export default function OrderSummary({
       <div className="space-y-4">
         <ul className="divide-y overflow-y-auto max-h-[400px]">
           {items.map((item) => (
-            <li key={item.id} className="py-2 flex justify-between">
+            <li key={item.id} className="py-2 flex justify-between items-end">
               <div>
                 <p className="font-medium line-clamp-1">{item.title}</p>
                 <div className="flex items-center space-x-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {item.color}
-                  </Badge>
-                  <Badge variant="secondary" className="text-xs">
-                    {item.size}
-                  </Badge>
+                  <Badge className="text-xs">{item.color}</Badge>
+                  <Badge className="text-xs">{item.size}</Badge>
                 </div>
 
                 <p className="text-sm text-gray-500">

@@ -1,30 +1,9 @@
 "use client";
 
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-  VisibilityState,
-} from "@tanstack/react-table";
-import {
-  ArrowUpDown,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Pencil,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+import { Pencil, Trash2 } from "lucide-react";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   AlertDialog,
@@ -38,7 +17,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  createActionsColumn,
+  createSelectionColumn,
+  createSortableHeader,
+} from "@/components/ui/data-table/columns";
+import { DataTable } from "@/components/ui/data-table/DataTable";
 import {
   Dialog,
   DialogContent,
@@ -47,13 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -63,14 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useAuthStore } from "@/store/authStore";
 import { useUserStore } from "@/store/userStore";
 import { UserData } from "@/types/user.types";
@@ -88,16 +58,10 @@ const UserList = () => {
   } = useUserStore();
 
   const [editingRoleUserId, setEditingRoleUserId] = useState<string>("");
-
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [editedUserData, setEditedUserData] = useState<Partial<UserData>>({});
   const [editingUserRole, setEditingUserRole] = useState<string>("");
-
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
-
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
@@ -145,29 +109,39 @@ const UserList = () => {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!deleteUserId) return;
+    try {
+      await deleteUser(deleteUserId);
+    } catch (error) {
+      console.log("handleDeleteUser ~ error:", error);
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setDeleteUserId(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      if (selectedUserIds.length === 0) return;
+      await bulkDeleteUsers(selectedUserIds);
+      setRowSelection({});
+    } catch (error) {
+      console.error("Error deleting users:", error);
+    } finally {
+      setIsBulkDeleteDialogOpen(false);
+    }
+  };
+
+  // Custom row selection function to prevent selecting current user
+  const customSelectRowFn = (user: UserData) => {
+    return currentUser?.uid !== user.uid;
+  };
+
+  const selectionColumn = createSelectionColumn<UserData>(customSelectRowFn);
+
   const columns: ColumnDef<UserData>[] = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
+    selectionColumn,
     {
       accessorKey: "username",
       header: "User",
@@ -209,17 +183,7 @@ const UserList = () => {
     },
     {
       accessorKey: "createdAt",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Created At
-            <ArrowUpDown className="ml-2 size-4" />
-          </Button>
-        );
-      },
+      header: createSortableHeader("createdAt", "Created At"),
       cell: ({ row }) => {
         const user = row.original;
         return <div className="text-gray-500">{user.createdAt}</div>;
@@ -259,260 +223,85 @@ const UserList = () => {
         );
       },
     },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const user = row.original;
-        const isCurrentUser = currentUser?.uid === user.uid;
-        const canEdit = currentUser?.role === "admin" || isCurrentUser;
-        const canDelete = currentUser?.role === "admin" && !isCurrentUser;
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="size-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {canEdit && (
-                <DropdownMenuItem onClick={() => setEditingUser(user)}>
-                  <Pencil className="mr-2 size-4" />
-                  Edit
-                </DropdownMenuItem>
-              )}
-              {canDelete && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setDeleteUserId(user.uid as string);
-                      setIsDeleteDialogOpen(true);
-                    }}
-                    className="text-red-600 focus:text-red-600"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
   ];
 
-  const table = useReactTable({
-    data: users || [],
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
+  // Create actions column
+  const actionsColumn = createActionsColumn<UserData>((user) => {
+    const isCurrentUser = currentUser?.uid === user.uid;
+    const canEdit = currentUser?.role === "admin" || isCurrentUser;
+    const canDelete = currentUser?.role === "admin" && !isCurrentUser;
+
+    const actions = [];
+
+    if (canEdit) {
+      actions.push(
+        <DropdownMenuItem key="edit" onClick={() => setEditingUser(user)}>
+          <Pencil className="mr-2 size-4" />
+          Edit
+        </DropdownMenuItem>
+      );
+    }
+
+    if (canDelete) {
+      actions.push(
+        <DropdownMenuItem
+          key="delete"
+          onClick={() => {
+            setDeleteUserId(user.uid as string);
+            setIsDeleteDialogOpen(true);
+          }}
+          className="text-red-600 focus:text-red-600"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </DropdownMenuItem>
+      );
+    }
+
+    return actions;
   });
 
-  const selectedUserIds = table
-    .getFilteredRowModel()
-    .rows.filter((row) => row.getIsSelected())
-    .map((row) => row.original.uid as string)
-    .filter(Boolean);
+  const allColumns = [...columns, actionsColumn];
 
-  const handleDeleteUser = async () => {
-    if (!deleteUserId) return;
-    try {
-      await deleteUser(deleteUserId);
-    } catch (error) {
-      console.log("handleDeleteUser ~ error:", error);
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setDeleteUserId(null);
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    try {
-      if (selectedUserIds.length === 0) return;
-      await bulkDeleteUsers(selectedUserIds);
-      setRowSelection({});
-    } catch (error) {
-      console.error("Error deleting users:", error);
-    } finally {
-      setIsBulkDeleteDialogOpen(false);
-    }
-  };
+  const selectedUserIds = Object.keys(rowSelection)
+    .map((index) => {
+      const userIndex = parseInt(index);
+      return users[userIndex] ? users[userIndex].uid : null;
+    })
+    .filter((id): id is string => id !== null);
 
   const canBulkDelete =
     currentUser?.role === "admin" && selectedUserIds.length > 0;
 
+  const bulkDeleteButton = canBulkDelete ? (
+    <Button
+      variant="destructive"
+      size="sm"
+      onClick={() => setIsBulkDeleteDialogOpen(true)}
+      className="h-8 px-3"
+    >
+      <Trash2 className="mr-1 size-4" />
+      Delete Selected
+    </Button>
+  ) : null;
+
   return (
     <div className="container mx-auto py-10">
       <h1 className="mb-4 text-2xl font-bold">Users</h1>
-      {selectedUserIds.length > 0 && (
-        <div className="bg-primary/5 rounded-lg mb-4 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-white">
-              {selectedUserIds.length} selected
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRowSelection({})}
-              className="h-8 px-2 text-sm"
-            >
-              <X className="mr-1 size-4" />
-              Clear selection
-            </Button>
-          </div>
-          {canBulkDelete && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setIsBulkDeleteDialogOpen(true)}
-              className="h-8 px-3"
-            >
-              <Trash2 className="mr-1 size-4" />
-              Delete Selected
-            </Button>
-          )}
-        </div>
-      )}
-      <div className="rounded-md border bg-white shadow">
-        <div className="flex items-center gap-2 p-4">
-          <Search className="h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search user by username..."
-            value={
-              (table.getColumn("username")?.getFilterValue() as string) ?? ""
-            }
-            onChange={(event) =>
-              table.getColumn("username")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm border-none shadow-none focus-visible:ring-0"
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuItem
-                      key={column.id}
-                      className="capitalize"
-                      onClick={() =>
-                        column.toggleVisibility(!column.getIsVisible())
-                      }
-                    >
-                      <span className="mr-2">
-                        {column.getIsVisible() ? "✓" : ""}
-                      </span>
-                      {column.id}
-                    </DropdownMenuItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  {loading ? (
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full size-8 border-b-2 border-primary" />
-                    </div>
-                  ) : (
-                    "No users found"
-                  )}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        {table.getRowModel().rows.length > 0 && (
-          <div className="flex items-center justify-end space-x-2 p-4">
-            <div className="flex-1 text-sm text-muted-foreground">
-              {table.getFilteredRowModel().rows.length} user(s) total
-            </div>
-            <div className="space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
+
+      <DataTable
+        columns={allColumns}
+        data={users || []}
+        loading={loading}
+        searchKey="username"
+        searchPlaceholder="Search user by username..."
+        enableRowSelection
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        selectedItems={selectedUserIds.length}
+        onClearSelection={() => setRowSelection({})}
+        selectionActions={bulkDeleteButton}
+      />
 
       <AlertDialog
         open={isChangeRoleDialogOpen}

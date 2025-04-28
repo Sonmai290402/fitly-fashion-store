@@ -169,7 +169,7 @@ export default function MultipleImageSelector({
                     }`}
                   />
                   <span
-                    className={`mt-1 text-xs ${
+                    className={`mt-1 p-2 text-xs ${
                       validImages.length === 0
                         ? "text-primary font-medium"
                         : "text-gray-500"

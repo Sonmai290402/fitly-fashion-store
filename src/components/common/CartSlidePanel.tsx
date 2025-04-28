@@ -138,7 +138,6 @@ export default function CartSlidePanel({
     router.push("/checkout");
   }, [onOpenChange, router]);
 
-  // Added for selection functionality
   const handleToggleSelectAll = useCallback(() => {
     if (isAllSelected) {
       setSelectedItems([]);
@@ -173,7 +172,6 @@ export default function CartSlidePanel({
     setSelectedItems([]);
     setShowDeleteConfirmation(false);
 
-    // Show success toast
     toast.success(
       `${itemCount > 1 ? `${itemCount} items` : "Item"} deleted successfully`
     );
@@ -287,7 +285,7 @@ export default function CartSlidePanel({
                           variant="destructive"
                           size="sm"
                           onClick={handleDeleteSelected}
-                          disabled={!hasSelected}
+                          disabled={!hasSelected || showDeleteConfirmation}
                           className="flex items-center gap-1"
                         >
                           <Trash2 className="h-4 w-4" />

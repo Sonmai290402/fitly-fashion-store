@@ -394,7 +394,7 @@ const ProductFormModal = ({
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 items-start gap-4">
                   <FormField
                     control={form.control}
                     name="price"
@@ -427,7 +427,7 @@ const ProductFormModal = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 items-start gap-4">
                   <FormField
                     control={form.control}
                     name="gender"

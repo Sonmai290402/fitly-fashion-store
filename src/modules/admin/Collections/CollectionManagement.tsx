@@ -1,30 +1,7 @@
 "use client";
 
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-  VisibilityState,
-} from "@tanstack/react-table";
-import {
-  ArrowUpDown,
-  ChevronDown,
-  Eye,
-  EyeOff,
-  Loader2,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+import { Eye, EyeOff, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -40,23 +17,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  createActionsColumn,
+  createSelectionColumn,
+  createSortableHeader,
+} from "@/components/ui/data-table/columns";
+import { DataTable } from "@/components/ui/data-table/DataTable";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useCollectionStore } from "@/store/collectionStore";
 import { CollectionData } from "@/types/collection.types";
 
@@ -71,9 +38,6 @@ export default function CollectionManagement() {
     bulkDeleteCollections,
   } = useCollectionStore();
 
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [deleteCollectionId, setDeleteCollectionId] = useState<string | null>(
     null
@@ -89,46 +53,26 @@ export default function CollectionManagement() {
     fetchCollections();
   }, [fetchCollections]);
 
+  const selectedCollectionIds = Object.keys(rowSelection)
+    .map((index) => {
+      const collectionIndex = parseInt(index);
+      return collections[collectionIndex]
+        ? collections[collectionIndex].id
+        : null;
+    })
+    .filter((id): id is string => id !== null);
+
+  // Define columns
+  const selectionColumn = createSelectionColumn<CollectionData>();
+
   const columns: ColumnDef<CollectionData>[] = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
+    selectionColumn,
     {
       accessorKey: "title",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Collection
-            <ArrowUpDown className="ml-2 size-4" />
-          </Button>
-        );
-      },
+      header: createSortableHeader("title", "Collection"),
       cell: ({ row }) => {
         const imageUrl = row.original.image as string;
         const title = row.original.title;
-        console.log(" CollectionManagement ~ title:", title);
 
         return (
           <div className="flex flex-col gap-2">
@@ -145,7 +89,6 @@ export default function CollectionManagement() {
       header: "Products",
       cell: ({ row }) => {
         const productIds = (row.getValue("productIds") as string[]) || [];
-
         return <div>{productIds.length} products</div>;
       },
     },
@@ -172,69 +115,7 @@ export default function CollectionManagement() {
         );
       },
     },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const collection = row.original;
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="size-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => handleEditCollection(collection)}
-              >
-                <Pencil className="mr-2 size-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  setDeleteCollectionId(collection.id as string);
-                  setIsDeleteDialogOpen(true);
-                }}
-                className="text-red-600 focus:text-red-600"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
   ];
-
-  const table = useReactTable({
-    data: collections,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-  });
-
-  const selectedCollectionIds = table
-    .getFilteredRowModel()
-    .rows.filter((row) => row.getIsSelected())
-    .map((row) => row.original.id as string)
-    .filter(Boolean);
 
   const handleAddCollection = () => {
     setEditingCollection(null);
@@ -274,6 +155,43 @@ export default function CollectionManagement() {
     }
   };
 
+  // Actions column
+  const actionsColumn = createActionsColumn<CollectionData>((collection) => [
+    <DropdownMenuItem
+      key="edit"
+      onClick={() => handleEditCollection(collection)}
+    >
+      <Pencil className="mr-2 size-4" />
+      Edit
+    </DropdownMenuItem>,
+    <DropdownMenuItem
+      key="delete"
+      onClick={() => {
+        setDeleteCollectionId(collection.id as string);
+        setIsDeleteDialogOpen(true);
+      }}
+      className="text-red-600 focus:text-red-600"
+    >
+      <Trash2 className="mr-2 h-4 w-4" />
+      Delete
+    </DropdownMenuItem>,
+  ]);
+
+  const allColumns = [...columns, actionsColumn];
+
+  const bulkDeleteButton = (
+    <Button
+      variant="destructive"
+      size="sm"
+      onClick={() => setIsBulkDeleteDialogOpen(true)}
+      className="h-8 px-3"
+      disabled={isDeleting}
+    >
+      <Trash2 className="mr-1 size-4" />
+      Delete Selected
+    </Button>
+  );
+
   return (
     <div className="container py-10">
       <div className="flex items-center justify-between mb-6">
@@ -283,163 +201,19 @@ export default function CollectionManagement() {
         </Button>
       </div>
 
-      {selectedCollectionIds.length > 0 && (
-        <div className="bg-primary/5 rounded-lg mb-4 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-white">
-              {selectedCollectionIds.length} selected
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setRowSelection({})}
-              className="h-8 px-2 text-sm"
-            >
-              <X className="mr-1 size-4" />
-              Clear selection
-            </Button>
-          </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsBulkDeleteDialogOpen(true)}
-            className="h-8 px-3"
-            disabled={isDeleting}
-          >
-            <Trash2 className="mr-1 size-4" />
-            Delete Selected
-          </Button>
-        </div>
-      )}
-
-      <div className="rounded-md border bg-white">
-        <div className="flex items-center gap-2 p-4">
-          <Search className="h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search collection by name..."
-            value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("title")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm border-none shadow-none focus-visible:ring-0"
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuItem
-                      key={column.id}
-                      className="capitalize"
-                      onClick={() =>
-                        column.toggleVisibility(!column.getIsVisible())
-                      }
-                    >
-                      <span className="mr-2">
-                        {column.getIsVisible() ? "✓" : ""}
-                      </span>
-                      {column.id}
-                    </DropdownMenuItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  {loading ? (
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full size-8 border-b-2 border-primary" />
-                    </div>
-                  ) : (
-                    "No collections found"
-                  )}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <div className="flex items-center justify-between space-x-2 p-4 border-t">
-          <div className="text-sm text-muted-foreground">
-            {selectedCollectionIds.length > 0 ? (
-              <span>
-                Selected <strong>{selectedCollectionIds.length}</strong> of{" "}
-                {table.getFilteredRowModel().rows.length} collections
-              </span>
-            ) : (
-              <span>
-                Showing {table.getRowModel().rows.length} of{" "}
-                {collections.length} collections
-              </span>
-            )}
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DataTable
+        columns={allColumns}
+        data={collections}
+        loading={loading}
+        searchKey="title"
+        searchPlaceholder="Search collection by name..."
+        enableRowSelection
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        selectedItems={selectedCollectionIds.length}
+        onClearSelection={() => setRowSelection({})}
+        selectionActions={bulkDeleteButton}
+      />
 
       <CollectionFormModal
         open={isCollectionModalOpen}

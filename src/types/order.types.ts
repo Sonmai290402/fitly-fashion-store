@@ -16,6 +16,7 @@ export type OrderData = {
   createdAt: string | FieldValue;
   updatedAt: string | FieldValue;
   estimatedDeliveryDate?: string;
+  cancellationReason?: string;
   trackingNumber?: string;
   trackingUrl?: string;
   notes?: string;
