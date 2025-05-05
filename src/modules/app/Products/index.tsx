@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import React, { useMemo } from "react";
+import React from "react";
 
 import Breadcrumb from "@/components/common/Breadcrumb";
 import { useCategoryStore } from "@/store/categoryStore";
@@ -25,23 +25,15 @@ const Products = () => {
   const maxPrice = searchParams.get("maxPrice");
   const sort = searchParams.get("sort");
 
-  const filters = useMemo(() => {
-    return Object.entries({
-      gender,
-      category,
-      color,
-      size,
-      minPrice: minPrice ? Number(minPrice) : undefined,
-      maxPrice: maxPrice ? Number(maxPrice) : undefined,
-      sort,
-    }).reduce((acc, [key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        acc[key as keyof ProductFilters] =
-          typeof value === "number" ? value.toString() : value;
-      }
-      return acc;
-    }, {} as ProductFilters);
-  }, [gender, category, color, size, minPrice, maxPrice, sort]);
+  const filters: ProductFilters = {
+    gender: gender || undefined,
+    category: category || undefined,
+    color: color || undefined,
+    size: size || undefined,
+    minPrice: minPrice ? Number(minPrice) : undefined,
+    maxPrice: maxPrice ? Number(maxPrice) : undefined,
+    sort: sort || undefined,
+  };
 
   const selectedGender = filters.gender
     ? genders.find((g) => g.title.toLowerCase() === filters.gender)
