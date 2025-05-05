@@ -6,6 +6,15 @@ export type ProductFilters = {
   minPrice?: number | string;
   maxPrice?: number | string;
   sort?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type PaginationState = {
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
 };
 
 export type ProductData = {

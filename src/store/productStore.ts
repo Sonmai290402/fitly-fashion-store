@@ -1,14 +1,20 @@
+// store/productStore.ts
 import { FirebaseError } from "firebase/app";
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
+  DocumentData,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
   Query,
   query,
+  QueryDocumentSnapshot,
   serverTimestamp,
+  startAfter,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -16,15 +22,50 @@ import toast from "react-hot-toast";
 import { create } from "zustand";
 
 import { fireDB } from "@/firebase/firebaseConfig";
-import { ProductData, ProductFilters } from "@/types/product.types";
+import {
+  PaginationState,
+  ProductData,
+  ProductFilters,
+} from "@/types/product.types";
 import { handleFirebaseError } from "@/utils/configFirebaseError";
 
 type ProductState = {
+  // Main product arrays
   products: Array<ProductData & { id?: string }>;
+  productsToDisplay: Array<ProductData & { id?: string }>;
+  allPageProducts: Array<ProductData & { id?: string }>;
+
+  // Loading and error states
   loading: boolean;
+  isLazyLoading: boolean;
   error: string | null;
-  createProduct: (productData: ProductData) => Promise<boolean>;
-  fetchProducts: (filters?: ProductFilters) => Promise<boolean>;
+
+  // Pagination states
+  pagination: PaginationState;
+  hasMore: boolean;
+  lastDocument: QueryDocumentSnapshot<DocumentData> | null;
+
+  // Pagination actions
+  setPagination: (pagination: Partial<PaginationState>) => void;
+  resetPagination: () => void;
+  setCurrentPage: (page: number) => void;
+
+  // Lazy loading actions
+  setLazyLoading: (loading: boolean) => void;
+  loadMoreProducts: () => void;
+  resetLazyLoading: () => void;
+
+  // Product CRUD operations
+  createProduct: (productData: ProductData) => Promise<string | boolean>;
+  fetchProducts: (
+    filters?: ProductFilters,
+    resetPagination?: boolean
+  ) => Promise<boolean>;
+  fetchProductsForPage: (
+    filters?: ProductFilters,
+    page?: number
+  ) => Promise<boolean>;
+  fetchMoreProducts: (filters?: ProductFilters) => Promise<boolean>;
   fetchProductById: (id: string) => Promise<ProductData | null>;
   deleteProduct: (id: string) => Promise<boolean>;
   updateProduct: (
@@ -34,10 +75,87 @@ type ProductState = {
   bulkDeleteProducts: (productIds: string[]) => Promise<void>;
 };
 
-export const useProductStore = create<ProductState>((set) => ({
+const initialPaginationState: PaginationState = {
+  currentPage: 1,
+  pageSize: 12,
+  totalItems: 0,
+  totalPages: 0,
+};
+
+export const useProductStore = create<ProductState>((set, get) => ({
+  // Initial state
   products: [],
+  productsToDisplay: [],
+  allPageProducts: [],
   loading: false,
+  isLazyLoading: false,
   error: null,
+  pagination: { ...initialPaginationState },
+  hasMore: true,
+  lastDocument: null,
+
+  // Pagination state management
+  setPagination: (pagination) => {
+    set((state) => ({
+      pagination: { ...state.pagination, ...pagination },
+    }));
+  },
+
+  resetPagination: () => {
+    set({
+      pagination: { ...initialPaginationState },
+      lastDocument: null,
+      hasMore: true,
+      productsToDisplay: [],
+      allPageProducts: [],
+    });
+  },
+
+  setCurrentPage: (page) => {
+    set((state) => ({
+      pagination: {
+        ...state.pagination,
+        page,
+      },
+    }));
+    // Reset lazy loading when changing page
+    get().resetLazyLoading();
+  },
+
+  // Lazy loading state management
+  setLazyLoading: (loading) => {
+    set({ isLazyLoading: loading });
+  },
+
+  loadMoreProducts: () => {
+    set((state) => {
+      // If we're already showing all products for this page, do nothing
+      if (state.productsToDisplay.length >= state.allPageProducts.length) {
+        return state;
+      }
+
+      // Get the next batch of products (load 4 more products)
+      const nextBatch = state.allPageProducts.slice(
+        state.productsToDisplay.length,
+        state.productsToDisplay.length + 4
+      );
+
+      return {
+        productsToDisplay: [...state.productsToDisplay, ...nextBatch],
+        isLazyLoading: false,
+      };
+    });
+  },
+
+  resetLazyLoading: () => {
+    const { allPageProducts } = get();
+    set({
+      productsToDisplay: allPageProducts.slice(0, 4),
+      isLazyLoading: false,
+    });
+  },
+
+  // Create a new product
   createProduct: async (productData: ProductData) => {
     set({ loading: true, error: null });
     try {
@@ -55,6 +173,7 @@ export const useProductStore = create<ProductState>((set) => ({
         toast.error("Product already exists!");
         return false;
       }
+
       const newProduct = {
         ...productData,
         createdAt: serverTimestamp(),
@@ -67,18 +186,33 @@ export const useProductStore = create<ProductState>((set) => ({
       };
 
       const docRef = await addDoc(productRef, newProduct);
+      const createdProduct = {
+        ...newProduct,
+        id: docRef.id,
+        createdAt: new Date().toISOString(),
+      };
 
-      set((state) => ({
-        products: [
-          ...state.products,
-          { ...newProduct, id: docRef.id, createdAt: new Date().toISOString() },
-        ],
-        loading: false,
-        error: null,
-      }));
+      set((state) => {
+        // Calculate new pagination
+        const newTotalItems = state.pagination.totalItems + 1;
+        const newTotalPages = Math.ceil(
+          newTotalItems / state.pagination.pageSize
+        );
+
+        return {
+          products: [createdProduct, ...state.products],
+          loading: false,
+          error: null,
+          pagination: {
+            ...state.pagination,
+            totalItems: newTotalItems,
+            totalPages: newTotalPages,
+          },
+        };
+      });
 
       toast.success("Product added successfully!");
-      return true;
+      return docRef.id;
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
       handleFirebaseError(error as FirebaseError);
@@ -86,25 +220,77 @@ export const useProductStore = create<ProductState>((set) => ({
     }
   },
 
-  fetchProducts: async (filters: ProductFilters = {}) => {
-    set({ loading: true, error: null });
+  // Fetch products with pagination and infinite scroll support
+  fetchProducts: async (
+    filters: ProductFilters = {},
+    resetPagination = true
+  ) => {
+    set((state) => ({
+      loading: true,
+      error: null,
+      ...(resetPagination
+        ? {
+            lastDocument: null,
+            hasMore: true,
+            pagination: {
+              ...state.pagination,
+              page: 1,
+            },
+          }
+        : {}),
+    }));
 
     try {
       const productRef = collection(fireDB, "products");
+      const pageSize = get().pagination.pageSize;
 
-      let q: Query = query(productRef);
+      // Build the query with filters
+      let baseQuery: Query = query(productRef);
 
       if (filters.gender) {
-        q = query(q, where("gender", "==", filters.gender));
+        baseQuery = query(baseQuery, where("gender", "==", filters.gender));
       }
 
       if (filters.category) {
-        q = query(q, where("category", "==", filters.category));
+        baseQuery = query(baseQuery, where("category", "==", filters.category));
       }
 
-      const querySnapshot = await getDocs(q);
+      // Get total count for pagination info (this is a separate query)
+      const countSnapshot = await getDocs(baseQuery);
+      const totalItems = countSnapshot.size;
 
-      let products = querySnapshot.docs.map((doc) => ({
+      // Apply sorting
+      let sortField = "createdAt";
+      let sortDirection: "desc" | "asc" = "desc";
+
+      if (filters.sort) {
+        switch (filters.sort) {
+          case "price-asc":
+            sortField = "price";
+            sortDirection = "asc";
+            break;
+          case "price-desc":
+            sortField = "price";
+            sortDirection = "desc";
+            break;
+          case "newest":
+            sortField = "createdAt";
+            sortDirection = "desc";
+            break;
+        }
+      }
+
+      // Apply ordering and pagination
+      const paginatedQuery = query(
+        baseQuery,
+        orderBy(sortField, sortDirection),
+        limit(pageSize)
+      );
+
+      const snapshot = await getDocs(paginatedQuery);
+
+      // Process results
+      let products = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...(doc.data() as ProductData),
         createdAt:
@@ -112,6 +298,7 @@ export const useProductStore = create<ProductState>((set) => ({
           doc.data().createdAt,
       })) as (ProductData & { id: string })[];
 
+      // Apply client-side filters if needed
       if (filters.color) {
         products = products.filter((product) =>
           product.colors?.some(
@@ -134,36 +321,33 @@ export const useProductStore = create<ProductState>((set) => ({
         const minPrice = Number(filters.minPrice);
         products = products.filter((product) => product.price >= minPrice);
       }
+
       if (filters.maxPrice !== undefined) {
         const maxPrice = Number(filters.maxPrice);
         products = products.filter((product) => product.price <= maxPrice);
       }
 
-      if (filters.sort) {
-        switch (filters.sort) {
-          case "price-asc":
-            products = products.sort((a, b) => (a.price || 0) - (b.price || 0));
-            break;
-          case "price-desc":
-            products = products.sort((a, b) => (b.price || 0) - (a.price || 0));
-            break;
-          case "newest":
-            products = products.sort((a, b) => {
-              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-              return dateB - dateA;
-            });
-            break;
-        }
-      } else {
-        products = products.sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return dateB - dateA;
-        });
-      }
+      // Update pagination info
+      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+      const hasMore = snapshot.docs.length === pageSize;
+      const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
 
-      set({ products, loading: false, error: null });
+      // Update store with both regular pagination and lazy loading setup
+      set({
+        products,
+        allPageProducts: products,
+        productsToDisplay: products.slice(0, 4), // Initial lazy loading - show first 4 products
+        loading: false,
+        error: null,
+        lastDocument: lastDoc,
+        hasMore,
+        pagination: {
+          ...get().pagination,
+          totalItems,
+          totalPages,
+        },
+      });
+
       return true;
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
@@ -172,6 +356,263 @@ export const useProductStore = create<ProductState>((set) => ({
     }
   },
 
+  // Fetch products for a specific page (with lazy loading support)
+  fetchProductsForPage: async (filters: ProductFilters = {}, page = 1) => {
+    set({ loading: true, error: null });
+
+    try {
+      const productRef = collection(fireDB, "products");
+      const pageSize = get().pagination.pageSize;
+
+      // Build the query with filters
+      let baseQuery = query(productRef);
+
+      if (filters.gender) {
+        baseQuery = query(baseQuery, where("gender", "==", filters.gender));
+      }
+
+      if (filters.category) {
+        baseQuery = query(baseQuery, where("category", "==", filters.category));
+      }
+
+      // Get total count for pagination info
+      // const countSnapshot = await getDocs(baseQuery);
+      // const totalItems = countSnapshot.size;
+      // const totalPages = Math.ceil(totalItems / pageSize);
+
+      // Apply sorting
+      let sortField = "createdAt";
+      let sortDirection: "desc" | "asc" = "desc";
+
+      if (filters.sort) {
+        switch (filters.sort) {
+          case "price-asc":
+            sortField = "price";
+            sortDirection = "asc";
+            break;
+          case "price-desc":
+            sortField = "price";
+            sortDirection = "desc";
+            break;
+          case "newest":
+            sortField = "createdAt";
+            sortDirection = "desc";
+            break;
+        }
+      }
+
+      // Calculate skip for pagination
+      const skip = (page - 1) * pageSize;
+
+      // This implementation uses a dummy solution for skip
+      // In production, for better performance, implement a proper pagination strategy
+      // like cursor-based pagination or using query snapshots
+      const allProductsQuery = query(
+        baseQuery,
+        orderBy(sortField, sortDirection)
+      );
+
+      const allDocsSnapshot = await getDocs(allProductsQuery);
+      const allProducts = allDocsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as ProductData),
+        createdAt:
+          doc.data().createdAt?.toDate?.()?.toISOString() ||
+          doc.data().createdAt,
+      })) as (ProductData & { id: string })[];
+
+      // Apply client-side filters
+      let filteredProducts = allProducts;
+
+      if (filters.color) {
+        filteredProducts = filteredProducts.filter((product) =>
+          product.colors?.some(
+            (color) => color.name.toLowerCase() === filters.color?.toLowerCase()
+          )
+        );
+      }
+
+      if (filters.size) {
+        filteredProducts = filteredProducts.filter((product) =>
+          product.colors?.some((color) =>
+            color.sizes?.some(
+              (size) => size.name.toLowerCase() === filters.size?.toLowerCase()
+            )
+          )
+        );
+      }
+
+      if (filters.minPrice !== undefined) {
+        const minPrice = Number(filters.minPrice);
+        filteredProducts = filteredProducts.filter(
+          (product) => product.price >= minPrice
+        );
+      }
+
+      if (filters.maxPrice !== undefined) {
+        const maxPrice = Number(filters.maxPrice);
+        filteredProducts = filteredProducts.filter(
+          (product) => product.price <= maxPrice
+        );
+      }
+
+      // Get paginated slice
+      const paginatedProducts = filteredProducts.slice(skip, skip + pageSize);
+
+      // Update store
+      set({
+        products: filteredProducts,
+        allPageProducts: paginatedProducts,
+        productsToDisplay: paginatedProducts.slice(0, 4), // Initial lazy loading
+        loading: false,
+        error: null,
+        pagination: {
+          currentPage: page,
+          pageSize,
+          totalItems: filteredProducts.length,
+          totalPages: Math.max(
+            1,
+            Math.ceil(filteredProducts.length / pageSize)
+          ),
+        },
+      });
+
+      return true;
+    } catch (error) {
+      set({ error: (error as Error).message, loading: false });
+      console.error("Error fetching products for page:", error);
+      return false;
+    }
+  },
+
+  // Fetch more products (infinite scroll)
+  fetchMoreProducts: async (filters: ProductFilters = {}) => {
+    const { lastDocument, hasMore, loading, pagination } = get();
+
+    if (loading || !hasMore || !lastDocument) {
+      return false;
+    }
+
+    set({ loading: true });
+
+    try {
+      const productRef = collection(fireDB, "products");
+      const pageSize = pagination.pageSize;
+
+      // Build the query with filters
+      let baseQuery: Query = query(productRef);
+
+      if (filters.gender) {
+        baseQuery = query(baseQuery, where("gender", "==", filters.gender));
+      }
+
+      if (filters.category) {
+        baseQuery = query(baseQuery, where("category", "==", filters.category));
+      }
+
+      // Apply sorting
+      let sortField = "createdAt";
+      let sortDirection: "desc" | "asc" = "desc";
+
+      if (filters.sort) {
+        switch (filters.sort) {
+          case "price-asc":
+            sortField = "price";
+            sortDirection = "asc";
+            break;
+          case "price-desc":
+            sortField = "price";
+            sortDirection = "desc";
+            break;
+          case "newest":
+            sortField = "createdAt";
+            sortDirection = "desc";
+            break;
+        }
+      }
+
+      // Apply ordering and pagination with startAfter
+      const paginatedQuery = query(
+        baseQuery,
+        orderBy(sortField, sortDirection),
+        startAfter(lastDocument),
+        limit(pageSize)
+      );
+
+      const snapshot = await getDocs(paginatedQuery);
+
+      // Process results
+      let newProducts = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as ProductData),
+        createdAt:
+          doc.data().createdAt?.toDate?.()?.toISOString() ||
+          doc.data().createdAt,
+      })) as (ProductData & { id: string })[];
+
+      // Apply client-side filters if needed
+      if (filters.color) {
+        newProducts = newProducts.filter((product) =>
+          product.colors?.some(
+            (color) => color.name.toLowerCase() === filters.color?.toLowerCase()
+          )
+        );
+      }
+
+      if (filters.size) {
+        newProducts = newProducts.filter((product) =>
+          product.colors?.some((color) =>
+            color.sizes?.some(
+              (size) => size.name.toLowerCase() === filters.size?.toLowerCase()
+            )
+          )
+        );
+      }
+
+      if (filters.minPrice !== undefined) {
+        const minPrice = Number(filters.minPrice);
+        newProducts = newProducts.filter(
+          (product) => product.price >= minPrice
+        );
+      }
+
+      if (filters.maxPrice !== undefined) {
+        const maxPrice = Number(filters.maxPrice);
+        newProducts = newProducts.filter(
+          (product) => product.price <= maxPrice
+        );
+      }
+
+      // Check if there are more products to load
+      const hasMoreProducts = snapshot.docs.length === pageSize;
+      const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+
+      // Update the store
+      set((state) => ({
+        products: [...state.products, ...newProducts],
+        allPageProducts: [...state.allPageProducts, ...newProducts],
+        productsToDisplay: [
+          ...state.productsToDisplay,
+          ...newProducts.slice(0, 4),
+        ], // Add initial batch of new products
+        loading: false,
+        lastDocument: lastDoc,
+        hasMore: hasMoreProducts,
+        pagination: {
+          ...state.pagination,
+          page: state.pagination.currentPage + 1,
+        },
+      }));
+
+      return true;
+    } catch (error) {
+      set({ error: (error as Error).message, loading: false });
+      console.error("Error fetching more products:", error);
+      return false;
+    }
+  },
+
+  // Fetch a single product by ID
   fetchProductById: async (id: string) => {
     set({ loading: true, error: null });
     try {
@@ -179,10 +620,20 @@ export const useProductStore = create<ProductState>((set) => ({
       const productDoc = await getDoc(docRef);
 
       if (!productDoc.exists()) {
+        set({ loading: false });
         return null;
       }
+
+      const productData = {
+        id: productDoc.id,
+        ...productDoc.data(),
+        createdAt:
+          productDoc.data()?.createdAt?.toDate?.()?.toISOString() ||
+          productDoc.data()?.createdAt,
+      } as ProductData;
+
       set({ loading: false, error: null });
-      return { id: productDoc.id, ...productDoc.data() } as ProductData;
+      return productData;
     } catch (error) {
       set({ loading: false, error: (error as Error).message });
       console.error("Error fetching product details:", error);
@@ -190,17 +641,44 @@ export const useProductStore = create<ProductState>((set) => ({
     }
   },
 
+  // Delete a product
   deleteProduct: async (productId: string) => {
     set({ loading: true, error: null });
     try {
       const productRef = doc(fireDB, "products", productId);
       await deleteDoc(productRef);
 
-      set((state) => ({
-        products: state.products.filter((p) => p.id !== productId),
-        loading: false,
-        error: null,
-      }));
+      set((state) => {
+        const updatedProducts = state.products.filter(
+          (p) => p.id !== productId
+        );
+        const updatedAllPageProducts = state.allPageProducts.filter(
+          (p) => p.id !== productId
+        );
+        const updatedProductsToDisplay = state.productsToDisplay.filter(
+          (p) => p.id !== productId
+        );
+
+        // Update pagination
+        const totalItems = updatedProducts.length;
+        const totalPages = Math.max(
+          1,
+          Math.ceil(totalItems / state.pagination.pageSize)
+        );
+
+        return {
+          products: updatedProducts,
+          allPageProducts: updatedAllPageProducts,
+          productsToDisplay: updatedProductsToDisplay,
+          pagination: {
+            ...state.pagination,
+            totalItems,
+            totalPages,
+          },
+          loading: false,
+          error: null,
+        };
+      });
 
       toast.success("Product deleted successfully!");
       return true;
@@ -211,6 +689,7 @@ export const useProductStore = create<ProductState>((set) => ({
     }
   },
 
+  // Update a product
   updateProduct: async (productId: string, productData: ProductData) => {
     set({ loading: true, error: null });
     try {
@@ -223,15 +702,21 @@ export const useProductStore = create<ProductState>((set) => ({
 
       await updateDoc(productRef, updatedProduct);
 
+      const finalProduct = {
+        ...updatedProduct,
+        id: productId,
+        updatedAt: new Date().toISOString(),
+      };
+
       set((state) => ({
         products: state.products.map((product) =>
-          product.id === productId
-            ? {
-                ...updatedProduct,
-                id: productId,
-                updatedAt: new Date().toISOString(),
-              }
-            : product
+          product.id === productId ? finalProduct : product
+        ),
+        allPageProducts: state.allPageProducts.map((product) =>
+          product.id === productId ? finalProduct : product
+        ),
+        productsToDisplay: state.productsToDisplay.map((product) =>
+          product.id === productId ? finalProduct : product
         ),
         loading: false,
         error: null,
@@ -246,6 +731,7 @@ export const useProductStore = create<ProductState>((set) => ({
     }
   },
 
+  // Bulk delete products
   bulkDeleteProducts: async (productIds: string[]) => {
     set({ loading: true, error: null });
 
@@ -257,12 +743,37 @@ export const useProductStore = create<ProductState>((set) => ({
 
       await Promise.all(deletePromises);
 
-      set((state) => ({
-        products: state.products.filter(
+      set((state) => {
+        const updatedProducts = state.products.filter(
           (product) => !productIds.includes(product.id as string)
-        ),
-        loading: false,
-      }));
+        );
+        const updatedAllPageProducts = state.allPageProducts.filter(
+          (product) => !productIds.includes(product.id as string)
+        );
+        const updatedProductsToDisplay = state.productsToDisplay.filter(
+          (product) => !productIds.includes(product.id as string)
+        );
+
+        // Update pagination
+        const totalItems = updatedProducts.length;
+        const totalPages = Math.max(
+          1,
+          Math.ceil(totalItems / state.pagination.pageSize)
+        );
+
+        return {
+          products: updatedProducts,
+          allPageProducts: updatedAllPageProducts,
+          productsToDisplay: updatedProductsToDisplay,
+          pagination: {
+            ...state.pagination,
+            totalItems,
+            totalPages,
+          },
+          loading: false,
+        };
+      });
+
       toast.success("Products deleted successfully!");
     } catch (error) {
       console.error("Error bulk deleting products:", error);

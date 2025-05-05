@@ -41,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import TipTapEditor from "@/components/ui/TiptapEditor";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useCollectionStore } from "@/store/collectionStore";
 import { useGenderStore } from "@/store/genderStore";
@@ -384,8 +384,9 @@ const ProductFormModal = ({
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Textarea
-                          {...field}
+                        <TipTapEditor
+                          value={field.value || ""}
+                          onChange={field.onChange}
                           placeholder="Product description"
                         />
                       </FormControl>

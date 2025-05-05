@@ -58,7 +58,7 @@ interface ReviewsState {
       ProductReview,
       "id" | "helpfulVotes" | "createdAt" | "updatedAt"
     >,
-    images?: File[]
+    imageUrls?: string[]
   ) => Promise<string | null>;
   updateReview: (
     reviewId: string,
@@ -86,7 +86,28 @@ const setupAuthListener = () => {
 
   if (typeof window !== "undefined") {
     window.addEventListener("storage", handleStorageChange);
+
+    const unsubscribe = useAuthStore.subscribe((state, prevState) => {
+      if (state.user?.uid !== prevState.user?.uid) {
+        setTimeout(() => {
+          useReviewStore.getState().syncUserContext();
+
+          window.dispatchEvent(
+            new CustomEvent("userAuthChanged", {
+              detail: { userId: state.user?.uid || null },
+            })
+          );
+        }, 0);
+      }
+    });
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      unsubscribe();
+    };
   }
+
+  return () => {};
 };
 
 export const useReviewStore = create<ReviewsState>()(
@@ -107,11 +128,24 @@ export const useReviewStore = create<ReviewsState>()(
         const userId = currentUser?.uid || null;
         const { userHelpfulVotesMap } = get();
 
+        console.log("[ReviewStore] Syncing user context:", userId);
+
         if (userId) {
+          // When logged in, load user's votes
           set({
             currentUserId: userId,
             userHelpfulVotes: userHelpfulVotesMap[userId] || {},
           });
+
+          // Reload reviews with updated votes if they're already loaded
+          const { reviews } = get();
+          if (reviews.length > 0) {
+            set({
+              reviews: reviews.map((review) => ({
+                ...review,
+              })),
+            });
+          }
         } else {
           set({
             currentUserId: null,
@@ -130,6 +164,7 @@ export const useReviewStore = create<ReviewsState>()(
         }
 
         const { userHelpfulVotesMap } = get();
+
         set({
           currentUserId: currentUser.uid,
           userHelpfulVotes: userHelpfulVotesMap[currentUser.uid] || {},
@@ -426,17 +461,105 @@ export const useReviewStore = create<ReviewsState>()(
             return null;
           }
 
-          const newReview = await addDoc(collection(fireDB, "reviews"), {
+          // Create the new review object with server timestamp
+          const timestamp = new Date(); // Use JavaScript Date for immediate display
+          const newReviewData = {
             ...reviewData,
             images: imageUrls,
             helpfulVotes: 0,
             reportCount: 0,
-            status: "pending",
-            createdAt: serverTimestamp(),
+            status: "approved",
+            createdAt: timestamp.toISOString(),
+            updatedAt: timestamp.toISOString(),
+          };
+
+          // Add to Firestore
+          const newReviewRef = await addDoc(collection(fireDB, "reviews"), {
+            ...newReviewData,
+            createdAt: serverTimestamp(), // Keep serverTimestamp for database
             updatedAt: serverTimestamp(),
           });
 
+          const newReviewId = newReviewRef.id;
+
+          // Get user data for display
+          let userData = null;
+          try {
+            const userDoc = await getDocs(
+              query(
+                collection(fireDB, "users"),
+                where("uid", "==", reviewData.userId)
+              )
+            );
+
+            if (!userDoc.empty) {
+              userData = userDoc.docs[0].data();
+            }
+          } catch (error) {
+            console.error("Error fetching user data for new review:", error);
+          }
+
+          // Create complete review object for UI
+          const completeReview = {
+            id: newReviewId,
+            ...newReviewData,
+            user: userData
+              ? {
+                  uid: userData.uid,
+                  username: userData.username || "User",
+                  email: userData.email || "",
+                  avatar: userData.avatar || DEFAULT_AVATAR_URL,
+                }
+              : {
+                  uid: reviewData.userId,
+                  username: "User",
+                  email: "",
+                  avatar: DEFAULT_AVATAR_URL,
+                },
+          } as ProductReview;
+
+          // Update the local reviews state
+          set((state) => {
+            // Get current product ratings or create default
+            const currentRatings = state.productRatings[
+              reviewData.productId
+            ] || {
+              averageRating: 0,
+              totalReviews: 0,
+              ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+            };
+
+            // Calculate new values
+            const rating = reviewData.rating as number;
+            const currentTotal = currentRatings.totalReviews;
+            const currentAvg = currentRatings.averageRating;
+            const distribution = { ...currentRatings.ratingDistribution };
+
+            const newTotal = currentTotal + 1;
+            const newAvg = (currentAvg * currentTotal + rating) / newTotal;
+
+            distribution[rating as keyof typeof distribution] =
+              (distribution[rating as keyof typeof distribution] || 0) + 1;
+
+            // Return updated state with both review and rating summary updated
+            return {
+              ...state,
+              reviews: [completeReview, ...state.reviews],
+              loading: false,
+              productRatings: {
+                ...state.productRatings,
+                [reviewData.productId]: {
+                  averageRating: newAvg,
+                  totalReviews: newTotal,
+                  ratingDistribution: distribution,
+                },
+              },
+            };
+          });
+
+          // Update product rating stats
           await runTransaction(fireDB, async (transaction) => {
+            // Existing product rating update code...
             const productRef = doc(fireDB, "products", reviewData.productId);
             const productDoc = await transaction.get(productRef);
 
@@ -469,16 +592,26 @@ export const useReviewStore = create<ReviewsState>()(
             });
           });
 
+          // Update user stats
           const userRef = doc(fireDB, "users", reviewData.userId);
           await updateDoc(userRef, {
             reviewCount: increment(1),
             lastReviewDate: serverTimestamp(),
           });
 
-          toast.success("Your review has been submitted for moderation");
-          set({ loading: false });
+          if (typeof window !== "undefined") {
+            const event = new CustomEvent("reviewAdded", {
+              detail: {
+                productId: reviewData.productId,
+                userId: reviewData.userId,
+              },
+            });
+            window.dispatchEvent(event);
+          }
 
-          return newReview.id;
+          toast.success("Review submitted successfully");
+
+          return newReviewId;
         } catch (error) {
           console.error("Error adding review:", error);
           set({
@@ -563,7 +696,7 @@ export const useReviewStore = create<ReviewsState>()(
         }
       },
 
-      deleteReview: async (reviewId, userId) => {
+      deleteReview: async (reviewId: string, userId: string) => {
         set({ loading: true, error: null });
 
         try {
@@ -584,10 +717,71 @@ export const useReviewStore = create<ReviewsState>()(
             return false;
           }
 
+          const productId = reviewData.productId;
+          const rating = reviewData.rating as number;
+
           await deleteDoc(reviewRef);
 
+          // Update the product rating summary immediately in local state
+          set((state) => {
+            // Get current product ratings or use a default
+            const currentRatings = state.productRatings[productId] || {
+              averageRating: 0,
+              totalReviews: 0,
+              ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+            };
+
+            // Calculate new values
+            const currentTotal = currentRatings.totalReviews;
+            if (currentTotal <= 1) {
+              // If this was the only review, reset everything
+              return {
+                ...state,
+                reviews: state.reviews.filter(
+                  (review) => review.id !== reviewId
+                ),
+                loading: false,
+                productRatings: {
+                  ...state.productRatings,
+                  [productId]: {
+                    averageRating: 0,
+                    totalReviews: 0,
+                    ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+                  },
+                },
+              };
+            }
+
+            // Calculate new average and distribution
+            const currentAvg = currentRatings.averageRating;
+            const distribution = { ...currentRatings.ratingDistribution };
+            const newTotal = currentTotal - 1;
+            const newAvg = (currentAvg * currentTotal - rating) / newTotal;
+
+            distribution[rating as keyof typeof distribution] = Math.max(
+              0,
+              distribution[rating as keyof typeof distribution] - 1
+            );
+
+            // Return updated state
+            return {
+              ...state,
+              reviews: state.reviews.filter((review) => review.id !== reviewId),
+              loading: false,
+              productRatings: {
+                ...state.productRatings,
+                [productId]: {
+                  averageRating: newAvg,
+                  totalReviews: newTotal,
+                  ratingDistribution: distribution,
+                },
+              },
+            };
+          });
+
+          // Also update the database (in background)
           await runTransaction(fireDB, async (transaction) => {
-            const productRef = doc(fireDB, "products", reviewData.productId);
+            const productRef = doc(fireDB, "products", productId);
             const productDoc = await transaction.get(productRef);
 
             if (!productDoc.exists()) {
@@ -595,8 +789,6 @@ export const useReviewStore = create<ReviewsState>()(
             }
 
             const productData = productDoc.data();
-            const rating = reviewData.rating as number;
-
             const currentTotal = productData.totalReviews || 0;
             const currentAvg = productData.averageRating || 0;
             const distribution = productData.ratingDistribution || {
@@ -607,15 +799,17 @@ export const useReviewStore = create<ReviewsState>()(
               1: 0,
             };
 
-            if (currentTotal === 0) {
+            if (currentTotal <= 1) {
+              transaction.update(productRef, {
+                totalReviews: 0,
+                averageRating: 0,
+                ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+              });
               return;
             }
 
             const newTotal = currentTotal - 1;
-            const newAvg =
-              newTotal === 0
-                ? 0
-                : (currentAvg * currentTotal - rating) / newTotal;
+            const newAvg = (currentAvg * currentTotal - rating) / newTotal;
 
             distribution[rating as keyof typeof distribution] = Math.max(
               0,
@@ -629,15 +823,11 @@ export const useReviewStore = create<ReviewsState>()(
             });
           });
 
+          // Update user review count
           const userRef = doc(fireDB, "users", reviewData.userId);
           await updateDoc(userRef, {
             reviewCount: increment(-1),
           });
-
-          set((state) => ({
-            reviews: state.reviews.filter((review) => review.id !== reviewId),
-            loading: false,
-          }));
 
           toast.success("Review deleted successfully");
           return true;
@@ -879,7 +1069,9 @@ export const useReviewStore = create<ReviewsState>()(
       ),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          state.syncUserContext();
+          setTimeout(() => {
+            state.syncUserContext();
+          }, 0);
         }
       },
     }
@@ -888,5 +1080,8 @@ export const useReviewStore = create<ReviewsState>()(
 
 if (typeof window !== "undefined") {
   setupAuthListener();
-  useReviewStore.getState().syncUserContext();
+
+  setTimeout(() => {
+    useReviewStore.getState().syncUserContext();
+  }, 0);
 }

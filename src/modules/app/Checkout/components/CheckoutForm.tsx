@@ -61,7 +61,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/auth/login?returnUrl=/checkout");
+      router.push("/login?returnUrl=/checkout");
       return;
     }
 

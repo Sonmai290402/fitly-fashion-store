@@ -96,13 +96,13 @@ const ProductInfo = ({
       const itemId = `${product.id}-${selectedColor?.name || "default"}-${
         selectedSize || "nosize"
       }`;
-      const price = product.sale_price || product.price || 0;
 
       addItem({
         id: itemId,
         productId: product.id || "",
         title: product.title,
-        price,
+        price: product.price,
+        sale_price: product.sale_price,
         image: mainImage,
         quantity,
         color: selectedColor?.name,
@@ -121,13 +121,6 @@ const ProductInfo = ({
       setAddingToCart(false);
     }
   };
-
-  const buttonText = useMemo(() => {
-    if (availableSizes.length > 0 && !selectedSize) {
-      return "SELECT A SIZE";
-    }
-    return "ADD TO CART";
-  }, [availableSizes.length, selectedSize]);
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5 sticky top-20 self-start">
@@ -238,7 +231,7 @@ const ProductInfo = ({
       <Button
         size="lg"
         className="mt-2 w-full py-5 sm:py-6 text-base sm:text-lg"
-        disabled={(availableSizes.length > 0 && !selectedSize) || addingToCart}
+        disabled={addingToCart}
         onClick={handleAddToCart}
       >
         {addingToCart ? (
@@ -249,7 +242,7 @@ const ProductInfo = ({
         ) : (
           <>
             <ShoppingCart className="mr-2 h-5 w-5" />
-            {buttonText}
+            ADD TO CART
           </>
         )}
       </Button>
@@ -266,8 +259,13 @@ const ProductInfo = ({
       )}
       {product.desc && (
         <div className="space-y-1">
-          <p className="font-bold text-sm sm:text-base">Description</p>
-          <p className="text-sm sm:text-base text-gray-700">{product.desc}</p>
+          <p className="font-bold text-center text-base sm:text-lg">
+            Description
+          </p>
+          <div
+            className="prose-sm sm:prose-base"
+            dangerouslySetInnerHTML={{ __html: product.desc }}
+          />
         </div>
       )}
 

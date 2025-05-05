@@ -26,20 +26,20 @@ export function RatingSummary({
   );
 
   useEffect(() => {
+    // This effect will run whenever productRatings or productId changes
     const loadRatingSummary = async () => {
       if (productRatings[productId]) {
         setSummaryData(productRatings[productId]);
-        return;
-      }
-
-      const data = await fetchProductRatingSummary(productId);
-      if (data) {
-        setSummaryData(data);
+      } else {
+        const data = await fetchProductRatingSummary(productId);
+        if (data) {
+          setSummaryData(data);
+        }
       }
     };
 
     loadRatingSummary();
-  }, [productId, fetchProductRatingSummary, productRatings]);
+  }, [productId, productRatings, fetchProductRatingSummary]);
 
   if (loading && !summaryData) {
     return <RatingSummarySkeleton />;

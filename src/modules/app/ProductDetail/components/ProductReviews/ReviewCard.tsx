@@ -33,35 +33,106 @@ export function ReviewCard({ review }: ReviewCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+
+  const [isVoting, setIsVoting] = useState(false);
+  const [localHelpfulCount, setLocalHelpfulCount] = useState(
+    review.helpfulVotes
+  );
+  const [localHasVoted, setLocalHasVoted] = useState(false);
 
   const { toggleHelpfulVote, deleteReview, userHelpfulVotes, loading } =
     useReviewStore();
+
   const { user } = useAuthStore();
 
   const isOwnReview = user?.uid === review.userId;
 
-  const hasVoted = !!userHelpfulVotes[review.id];
-
   const formattedDate = formatTimestamp(review.createdAt);
 
-  const handleToggleHelpful = async () => {
-    if (isSubmitting) return;
+  useEffect(() => {
+    const handleAuthChange = (event: Event) => {
+      console.log(" handleAuthChange ~ event:", event.target);
 
-    setIsSubmitting(true);
+      setNeedsRefresh((prev) => !prev);
+    };
+
+    window.addEventListener("userAuthChanged", handleAuthChange);
+    return () => {
+      window.removeEventListener("userAuthChanged", handleAuthChange);
+    };
+  }, []);
+
+  // Update local state when user changes or votes change
+  useEffect(() => {
+    const hasVoted = user ? !!userHelpfulVotes[review.id] : false;
+    setLocalHasVoted(hasVoted);
+    setLocalHelpfulCount(review.helpfulVotes);
+
+    // For debugging
+    console.log(
+      `[ReviewCard] Review ${review.id}, User ${
+        user?.uid || "none"
+      }, HasVoted: ${hasVoted}`
+    );
+  }, [user, userHelpfulVotes, review.id, review.helpfulVotes, needsRefresh]);
+
+  useEffect(() => {
+    if (user) {
+      setLocalHasVoted(!!userHelpfulVotes[review.id]);
+    } else {
+      setLocalHasVoted(false);
+    }
+  }, [user?.uid, review.id, userHelpfulVotes, user]);
+
+  useEffect(() => {
+    setLocalHasVoted(!!userHelpfulVotes[review.id]);
+    setLocalHelpfulCount(review.helpfulVotes);
+  }, [review.id, review.helpfulVotes, userHelpfulVotes]);
+
+  const handleToggleHelpful = async () => {
+    if (isVoting || !user) return;
+
+    // Optimistic UI update
+    setIsVoting(true);
+    const wasPreviouslyVoted = localHasVoted;
+
+    // Update local state immediately
+    setLocalHasVoted(!wasPreviouslyVoted);
+    setLocalHelpfulCount((prev) => (wasPreviouslyVoted ? prev - 1 : prev + 1));
+
     try {
       await toggleHelpfulVote(review.id);
+    } catch (error) {
+      // In case of error, revert optimistic update
+      setLocalHasVoted(wasPreviouslyVoted);
+      setLocalHelpfulCount((prev) =>
+        wasPreviouslyVoted ? prev + 1 : prev - 1
+      );
+      console.error("Failed to toggle helpful vote:", error);
     } finally {
-      setIsSubmitting(false);
+      setIsVoting(false);
     }
   };
+
+  const productId = review.productId;
 
   const handleDeleteReview = async () => {
     if (!user?.uid) return;
 
     setIsSubmitting(true);
     try {
-      await deleteReview(review.id, user.uid);
-      setIsDeleteModalOpen(false);
+      const success = await deleteReview(review.id, user.uid);
+      if (success) {
+        setIsDeleteModalOpen(false);
+
+        if (typeof window !== "undefined") {
+          const event = new CustomEvent("reviewDeleted", {
+            detail: { productId, userId: user.uid },
+          });
+          window.dispatchEvent(event);
+        }
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -148,24 +219,31 @@ export function ReviewCard({ review }: ReviewCardProps) {
               variant="ghost"
               size="sm"
               onClick={handleToggleHelpful}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isVoting || !user}
               className={clsx(
                 "text-gray-600 p-1 hover:text-red-500",
-                isSubmitting && "opacity-70"
+                isVoting && "opacity-70",
+                !user && "cursor-not-allowed opacity-50"
               )}
-              title={hasVoted ? "Remove helpful vote" : "Mark as helpful"}
+              title={
+                !user
+                  ? "Login to mark as helpful"
+                  : localHasVoted
+                  ? "Remove helpful vote"
+                  : "Mark as helpful"
+              }
             >
               <span className="text-gray-500">
-                {hasVoted ? (
+                {localHasVoted ? (
                   <Heart fill="red" className="size-5" />
                 ) : (
                   <Heart
-                    className={clsx("size-5", isSubmitting && "animate-pulse")}
+                    className={clsx("size-5", isVoting && "animate-pulse")}
                   />
                 )}
               </span>
-              {review.helpfulVotes > 0 && (
-                <span className="ml-1">{review.helpfulVotes}</span>
+              {localHelpfulCount > 0 && (
+                <span className="ml-1">{localHelpfulCount}</span>
               )}
             </Button>
 

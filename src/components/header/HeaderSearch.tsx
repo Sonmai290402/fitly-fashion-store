@@ -1,12 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, X } from "lucide-react";
+import { Loader, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { RefObject, useEffect, useRef, useState } from "react";
 import { RemoveScroll } from "react-remove-scroll";
 import { useOnClickOutside } from "usehooks-ts";
 
+import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchStore } from "@/store/searchStore";
 
 import SearchResults from "./SearchResults";
@@ -18,12 +19,14 @@ interface HeaderSearchProps {
 export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 300);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const { isSearchOpen, setSearchOpen, setSearchQuery, clearSearch } =
+  const { isSearchOpen, setSearchOpen, setSearchQuery, clearSearch, loading } =
     useSearchStore();
 
+  // Focus input when search is opened
   useEffect(() => {
     if (isSearchOpen && inputRef.current) {
       setTimeout(() => {
@@ -32,12 +35,14 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
     }
   }, [isSearchOpen]);
 
+  // Handle clicks outside the search component
   useOnClickOutside(searchRef as RefObject<HTMLElement>, () => {
-    if (!isMobile && isSearchOpen) {
+    if (isSearchOpen && !isMobile) {
       setSearchOpen(false);
     }
   });
 
+  // Clear search when closed
   useEffect(() => {
     if (!isSearchOpen) {
       setQuery("");
@@ -45,9 +50,12 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
     }
   }, [isSearchOpen, clearSearch]);
 
+  // Update search with debounced query
   useEffect(() => {
-    setSearchQuery(query);
-  }, [query, setSearchQuery]);
+    if (debouncedQuery) {
+      setSearchQuery(debouncedQuery);
+    }
+  }, [debouncedQuery, setSearchQuery]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +76,7 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
     setSearchOpen(false);
   };
 
+  // Mobile search experience
   if (isMobile) {
     return (
       <AnimatePresence>
@@ -79,30 +88,44 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
               className="fixed inset-0 bg-white dark:bg-gray-900 z-[150] p-4"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex-1">
                     <form onSubmit={handleSubmit}>
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                        {loading ? (
+                          <Loader className="absolute left-3 top-1/2 -translate-y-1/2 text-primary h-5 w-5 animate-spin" />
+                        ) : (
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                        )}
                         <input
                           ref={inputRef}
                           type="search"
                           value={query}
                           onChange={(e) => setQuery(e.target.value)}
                           placeholder="Search for products..."
-                          className="w-full pl-10 pr-10 py-2 rounded-full border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          className="w-full pl-10 pr-16 py-2 rounded-full border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                         />
-                        {query && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                          {query && (
+                            <button
+                              type="button"
+                              onClick={handleClear}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mr-1"
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={handleClear}
-                            className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            onClick={handleClose}
+                            className="ml-1 px-2 py-1 rounded text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-300"
                           >
-                            <X className="h-5 w-5" />
+                            Cancel
                           </button>
-                        )}
+                        </div>
                       </div>
                     </form>
                   </div>
@@ -122,7 +145,7 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
   return (
     <AnimatePresence>
       {isSearchOpen && (
-        <div ref={searchRef} className="relative">
+        <div ref={searchRef} className="relative z-10">
           <motion.div
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 280, opacity: 1 }}
@@ -133,6 +156,7 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
             <form onSubmit={handleSubmit}>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+
                 <input
                   ref={inputRef}
                   type="search"

@@ -177,6 +177,8 @@ export default function CartSlidePanel({
     );
   }, [selectedItems, removeItem]);
 
+  const totalQuantity = items.reduce((acc, item) => acc + item.quantity, 0);
+
   return (
     <AnimatePresence>
       {open && (
@@ -209,7 +211,7 @@ export default function CartSlidePanel({
                     <div className="flex items-center justify-between">
                       <h2 className="text-xl font-bold flex items-center gap-2">
                         <ShoppingCart className="h-5 w-5" />
-                        Your Cart {!isEmpty && `(${items.length})`}
+                        Your Cart {!isEmpty && `(${totalQuantity})`}
                       </h2>
                       <Button
                         variant="ghost"
@@ -456,9 +458,8 @@ export default function CartSlidePanel({
                     <div className="border-t px-4 py-5 sm:px-6 space-y-4 bg-gray-50 dark:bg-gray-800">
                       <div className="flex justify-between items-center">
                         <span className="font-medium">
-                          Subtotal (
-                          {items.reduce((acc, item) => acc + item.quantity, 0)}{" "}
-                          items)
+                          Subtotal ({totalQuantity}{" "}
+                          {totalQuantity === 1 ? "item" : "items"})
                         </span>
                         <motion.span
                           className="text-xl font-bold"
@@ -478,6 +479,7 @@ export default function CartSlidePanel({
                       <Button
                         className="w-full py-6 text-base"
                         onClick={handleCheckout}
+                        disabled={showDeleteConfirmation}
                         size="lg"
                       >
                         Checkout

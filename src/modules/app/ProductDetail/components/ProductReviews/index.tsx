@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,30 +27,55 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
   const { fetchProductRatingSummary, checkUserReviewEligibility } =
     useReviewStore();
 
-  useEffect(() => {
-    fetchProductRatingSummary(productId);
-  }, [productId, fetchProductRatingSummary]);
-
-  useEffect(() => {
-    const checkEligibility = async () => {
-      if (user?.uid) {
-        const eligible = await checkUserReviewEligibility(user.uid, productId);
-        setCanReview(eligible);
-      } else {
-        setCanReview(false);
-      }
-    };
-
-    checkEligibility();
+  const checkEligibility = useCallback(async () => {
+    if (user?.uid) {
+      const eligible = await checkUserReviewEligibility(user.uid, productId);
+      setCanReview(eligible);
+    } else {
+      setCanReview(false);
+    }
   }, [user, productId, checkUserReviewEligibility]);
 
+  // Initial eligibility check
+  useEffect(() => {
+    checkEligibility();
+  }, [user, productId, checkEligibility]);
+
+  // Initial rating summary fetch
   useEffect(() => {
     fetchProductRatingSummary(productId);
   }, [productId, fetchProductRatingSummary]);
 
+  // Reset filter when product changes
   useEffect(() => {
     setFilterRating("all");
   }, [productId]);
+
+  // Add listener for review deletion events
+  useEffect(() => {
+    const handleReviewDeleted = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail && customEvent.detail.productId === productId) {
+        // Refresh rating summary
+        fetchProductRatingSummary(productId);
+
+        // Check eligibility again
+        checkEligibility();
+      }
+    };
+
+    window.addEventListener(
+      "reviewDeleted",
+      handleReviewDeleted as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "reviewDeleted",
+        handleReviewDeleted as EventListener
+      );
+    };
+  }, [productId, user, fetchProductRatingSummary, checkEligibility]);
 
   const handleRatingFilterChange = (rating: string) => {
     setFilterRating((current) => (current === rating ? "all" : rating));
@@ -58,7 +83,6 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
 
   const handleFormSuccess = () => {
     setIsFormOpen(false);
-
     fetchProductRatingSummary(productId);
     setCanReview(false);
   };

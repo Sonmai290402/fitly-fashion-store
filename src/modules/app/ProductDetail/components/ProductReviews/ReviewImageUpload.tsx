@@ -1,6 +1,7 @@
 import { Loader2, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 import { useUploadStore } from "@/store/uploadStore";
 
@@ -22,41 +23,65 @@ export default function ReviewImageUpload({
   maxImages = 5,
 }: ReviewImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [, setUploadProgress] = useState<Record<string, number>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadImage, deleteImage, progress } = useUploadStore();
   const uploadId = `review-${productId}-${userId}`;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+    // Check if adding these files would exceed the max image limit
+    if (uploadedImages.length + files.length > maxImages) {
+      toast.error(`You can only upload a maximum of ${maxImages} images.`);
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Image size should be less than 2MB");
-      return;
-    }
-
+    // Track uploads in progress
     setIsUploading(true);
+    const uploadProgressMap: Record<string, number> = {};
 
-    try {
-      const uploadPath = `reviews/${productId}/${userId}`;
-      const imageUrl = await uploadImage(file, uploadPath, uploadId);
+    // Process each file sequentially to prevent overwhelming the upload system
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileId = `${file.name}-${Date.now()}`;
 
-      if (imageUrl) {
-        onImageAdded(imageUrl);
+      // Skip invalid files
+      if (!file.type.startsWith("image/")) {
+        toast.error(`File "${file.name}" is not an image. Skipping.`);
+        continue;
       }
-    } catch (error) {
-      console.error("Error uploading review image:", error);
-    } finally {
-      setIsUploading(false);
 
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      // Check file size
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error(`File "${file.name}" exceeds 2MB size limit. Skipping.`);
+        continue;
       }
+
+      // Initialize progress tracking for this file
+      uploadProgressMap[fileId] = 0;
+      setUploadProgress({ ...uploadProgressMap });
+
+      try {
+        const uploadPath = `reviews/${productId}/${userId}`;
+        const imageUrl = await uploadImage(file, uploadPath, uploadId);
+
+        if (imageUrl) {
+          onImageAdded(imageUrl);
+        }
+      } catch (error) {
+        console.error(`Error uploading image "${file.name}":`, error);
+        toast.error(`Failed to upload "${file.name}". Please try again.`);
+      }
+    }
+
+    // Reset state after all uploads are processed
+    setIsUploading(false);
+    setUploadProgress({});
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -104,6 +129,7 @@ export default function ReviewImageUpload({
               className="hidden"
               onChange={handleImageUpload}
               disabled={isUploading}
+              multiple // Add this attribute to enable multiple file selection
             />
 
             <button
@@ -129,6 +155,8 @@ export default function ReviewImageUpload({
 
       <p className="text-xs text-gray-500 mt-1">
         You can upload up to {maxImages} images. Max 2MB per image.
+        {/* Add info about multiple selection */}
+        <span className="ml-1">Click to select multiple images at once.</span>
       </p>
     </div>
   );

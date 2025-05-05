@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/authStore";
 import { useReviewStore } from "@/store/reviewStore";
+import { useUploadStore } from "@/store/uploadStore";
 
 import ReviewImageUpload from "./ReviewImageUpload";
 import { StarRatingInput } from "./StarRatingInput";
@@ -32,7 +33,7 @@ const reviewFormSchema = z.object({
   title: z.string().max(100, "Title must be 100 characters or less").optional(),
   comment: z
     .string()
-    .min(10, "Review must be at least 10 characters")
+    .min(1, "Please enter a review")
     .max(1000, "Review must be 1000 characters or less"),
 });
 
@@ -44,8 +45,10 @@ export function ReviewForm({
   onCancel,
 }: ReviewFormProps) {
   const { user } = useAuthStore();
-  const { addReview, loading } = useReviewStore();
+  const { addReview, loading: reviewLoading } = useReviewStore();
+  const { loading: uploadLoading } = useUploadStore();
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const form = useForm<ReviewFormValues>({
     resolver: zodResolver(reviewFormSchema),
@@ -60,9 +63,14 @@ export function ReviewForm({
     setUploadedImages((prev) => [...prev, url]);
   };
 
-  const handleImageRemoved = (url: string) => {
-    setUploadedImages((prev) => prev.filter((image) => image !== url));
+  const handleImageRemoved = (urlToRemove: string) => {
+    setUploadedImages((prev) => prev.filter((url) => url !== urlToRemove));
   };
+
+  useEffect(() => {
+    const anyUploadsInProgress = Object.values(uploadLoading).some(Boolean);
+    setIsUploading(anyUploadsInProgress);
+  }, [uploadLoading]);
 
   const onSubmit = async (data: ReviewFormValues) => {
     if (!user?.uid) {
@@ -78,12 +86,15 @@ export function ReviewForm({
       status: "pending" as const,
     };
 
-    const reviewId = await addReview(reviewData, []);
-
-    if (reviewId) {
+    try {
       form.reset();
       setUploadedImages([]);
       onSuccess?.();
+      setTimeout(async () => {
+        await addReview(reviewData, uploadedImages);
+      }, 100);
+    } catch (error) {
+      console.error("Error submitting review:", error);
     }
   };
 
@@ -161,9 +172,11 @@ export function ReviewForm({
               Cancel
             </Button>
           )}
-          <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Submit Review
+          <Button type="submit" disabled={reviewLoading || isUploading}>
+            {(reviewLoading || isUploading) && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            {isUploading ? "Uploading..." : "Submit Review"}
           </Button>
         </div>
       </form>

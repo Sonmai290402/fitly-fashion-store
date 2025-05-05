@@ -25,22 +25,24 @@ export default function OrderSummary({
       <div className="space-y-4">
         <ul className="divide-y overflow-y-auto max-h-[400px]">
           {items.map((item) => (
-            <li key={item.id} className="py-2 flex justify-between items-end">
+            <li key={item.id} className="py-2 flex flex-col">
               <div>
                 <p className="font-medium line-clamp-1">{item.title}</p>
                 <div className="flex items-center space-x-2">
                   <Badge className="text-xs">{item.color}</Badge>
                   <Badge className="text-xs">{item.size}</Badge>
                 </div>
+              </div>
 
+              <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-500">
                   {item.quantity} × {formatCurrency(item.price)}
                 </p>
-              </div>
 
-              <p className="font-medium">
-                {formatCurrency(item.price * item.quantity)}
-              </p>
+                <p className="font-medium">
+                  {formatCurrency(item.price * item.quantity)}
+                </p>
+              </div>
             </li>
           ))}
         </ul>

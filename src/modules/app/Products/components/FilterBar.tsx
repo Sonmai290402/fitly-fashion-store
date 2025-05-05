@@ -12,6 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useColorStore } from "@/store/colorStore";
 import { useGenderStore } from "@/store/genderStore";
@@ -355,18 +361,26 @@ export default function FilterBar({
               const isSelected = initialFilters.color === colorValue;
 
               return (
-                <Button
-                  key={color.name}
-                  onClick={() => toggleFilterValue("color", colorValue)}
-                  className={clsx(
-                    "size-6 rounded-full p-0 border",
-                    isSelected ? "ring-1 ring-offset-2 ring-primary" : ""
-                  )}
-                  style={{ backgroundColor: color.colorCode }}
-                  variant="ghost"
-                  title={color.name}
-                  aria-label={`Filter by ${color.name} color`}
-                />
+                <TooltipProvider key={color.name}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => toggleFilterValue("color", colorValue)}
+                        className={clsx(
+                          "size-6 rounded-full p-0 border",
+                          isSelected ? "ring-1 ring-offset-2 ring-primary" : ""
+                        )}
+                        style={{ backgroundColor: color.colorCode }}
+                        variant="ghost"
+                        title={color.name}
+                        aria-label={`Filter by ${color.name} color`}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{color.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               );
             })}
           </div>

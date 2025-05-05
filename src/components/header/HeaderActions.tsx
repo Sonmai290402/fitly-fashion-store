@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { LogOut, Package, Search, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,7 +23,7 @@ import HeaderSearch from "./HeaderSearch";
 
 const HeaderActions = () => {
   const { logout, user } = useAuthStore();
-  const { toggleSearch } = useSearchStore();
+  const { isSearchOpen, toggleSearch } = useSearchStore();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const isMobile = useMediaQuery("(max-width: 768px)");
   const hasHydrated = useHasHydrated();
@@ -46,14 +47,23 @@ const HeaderActions = () => {
 
   if (!hasHydrated) return <div className="flex flex-1"></div>;
 
+  // The only change is here - making the button toggle the search directly
+  // No need to go through HeaderSearch component for toggling
+  const handleSearchToggle = () => {
+    toggleSearch();
+  };
+
   return (
     <nav className="flex flex-1 justify-end items-center gap-1 md:gap-3">
       <HeaderSearch isMobile={isMobile} />
 
       <button
-        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-        onClick={toggleSearch}
-        aria-label="Search"
+        className={clsx("p-2 rounded-full transition-colors", {
+          "bg-primary/10 text-primary": isSearchOpen,
+          "hover:bg-gray-100 dark:hover:bg-gray-800": !isSearchOpen,
+        })}
+        onClick={handleSearchToggle}
+        aria-label={isSearchOpen ? "Close search" : "Open search"}
       >
         <Search className="h-5 w-5" />
       </button>

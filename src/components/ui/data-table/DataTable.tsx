@@ -181,7 +181,7 @@ export function DataTable<TData, TValue>({
                       .getColumn(searchKey)
                       ?.setFilterValue(event.target.value)
                   }
-                  className="max-w-sm pl-8 border-none shadow-none focus-visible:ring-0"
+                  className="w-lg pl-8 border-none shadow-none focus-visible:ring-0"
                 />
               </div>
             )}

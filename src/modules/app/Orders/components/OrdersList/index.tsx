@@ -342,7 +342,7 @@ export default function OrderList() {
               htmlFor="cancellation-reason"
               className="block text-sm font-medium mb-2"
             >
-              Reason for cancellation
+              Reason for cancellation (Optional)
             </label>
             <Textarea
               id="cancellation-reason"

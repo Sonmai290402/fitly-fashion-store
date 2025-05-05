@@ -52,14 +52,10 @@ const ProductCard = ({
     ? product.image
     : "";
 
-  const discountPercentage = useMemo(() => {
-    if (!product.sale_price || !product.price) return 0;
-    return Math.max(
-      0,
-      Math.round(((product.price - product.sale_price) / product.price) * 100)
-    );
-  }, [product.sale_price, product.price]);
-
+  const discountPercentage =
+    product?.sale_price && product?.price && product.price > 0
+      ? Math.round(((product.price - product.sale_price) / product.price) * 100)
+      : 0;
   const availableSizes = useMemo(() => {
     return selectedColor?.sizes?.filter((size) => size.inStock > 0) || [];
   }, [selectedColor]);
@@ -124,11 +120,13 @@ const ProductCard = ({
       )}
     >
       <div className="aspect-[3/4] relative overflow-hidden rounded-lg bg-gray-100">
-        {product.sale_price && discountPercentage > 0 && (
-          <Badge variant="destructive" className="absolute top-2 left-2 z-10">
-            -{discountPercentage}%
-          </Badge>
-        )}
+        {product.price > 0 &&
+          product.sale_price > 0 &&
+          discountPercentage > 0 && (
+            <Badge variant="destructive" className="absolute top-2 left-2 z-10">
+              -{discountPercentage}%
+            </Badge>
+          )}
 
         <Link href={productUrl} className="block w-full h-full">
           {imageLoading && !imageError && (
