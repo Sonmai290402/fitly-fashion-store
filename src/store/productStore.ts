@@ -529,20 +529,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
         );
       }
 
-      if (filters.minPrice !== undefined) {
-        const minPrice = Number(filters.minPrice);
-        newProducts = newProducts.filter(
-          (product) => product.price >= minPrice
-        );
-      }
-
-      if (filters.maxPrice !== undefined) {
-        const maxPrice = Number(filters.maxPrice);
-        newProducts = newProducts.filter(
-          (product) => product.price <= maxPrice
-        );
-      }
-
       // Check if there are more products to load
       const hasMoreProducts = snapshot.docs.length === pageSize;
       const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
