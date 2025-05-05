@@ -464,10 +464,6 @@ export default function FilterBar({
                 key === "size"
               ) {
                 label = `${key}: ${value}`;
-              } else if (key === "minPrice") {
-                label = `Min: $${value}`;
-              } else if (key === "maxPrice") {
-                label = `Max: $${value}`;
               }
 
               return (

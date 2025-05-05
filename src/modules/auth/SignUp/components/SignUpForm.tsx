@@ -61,7 +61,7 @@ const SignUpForm = () => {
         password: values.password,
       });
       if (success) {
-        router.push("/login");
+        router.push("/");
       }
     } catch (error) {
       console.error(error);
