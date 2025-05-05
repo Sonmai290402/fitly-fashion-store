@@ -8,6 +8,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import HeadingTypo from "@/components/common/HeadingTypo";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -17,7 +18,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import HeadingTypo from "@/components/common/HeadingTypo";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/authStore";
 
