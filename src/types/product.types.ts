@@ -3,8 +3,6 @@ export type ProductFilters = {
   category?: string;
   color?: string;
   size?: string;
-  minPrice?: number | string;
-  maxPrice?: number | string;
   sort?: string;
   page?: number;
   limit?: number;

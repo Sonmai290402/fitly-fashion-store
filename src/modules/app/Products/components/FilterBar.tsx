@@ -8,7 +8,6 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
@@ -72,7 +71,6 @@ export default function FilterBar({
     category: !!initialFilters.gender,
     color: !!initialFilters.color,
     size: !!initialFilters.size,
-    price: !!(initialFilters.minPrice || initialFilters.maxPrice),
   });
 
   useEffect(() => {
@@ -417,65 +415,6 @@ export default function FilterBar({
                 {size.name}
               </Button>
             ))}
-          </div>
-        )}
-        <Separator />
-      </div>
-
-      <div className="mb-4 space-y-4">
-        <div
-          className="flex items-center justify-between cursor-pointer"
-          onClick={() => toggleSection("price")}
-        >
-          <h3 className="font-medium">Price Range</h3>
-          <ChevronDown
-            className={clsx(
-              "size-5 transition-transform",
-              openSections.price ? "rotate-180" : ""
-            )}
-          />
-        </div>
-
-        {openSections.price && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-1/2">
-                <Label htmlFor="min-price" className="text-sm mb-1.5 block">
-                  Min ($)
-                </Label>
-                <Input
-                  id="min-price"
-                  type="number"
-                  min="0"
-                  value={initialFilters.minPrice || ""}
-                  onChange={(e) =>
-                    updateFilters(
-                      "minPrice",
-                      e.target.value ? parseInt(e.target.value) : null
-                    )
-                  }
-                  placeholder="0"
-                />
-              </div>
-              <div className="w-1/2">
-                <Label htmlFor="max-price" className="text-sm mb-1.5 block">
-                  Max ($)
-                </Label>
-                <Input
-                  id="max-price"
-                  type="number"
-                  min="0"
-                  value={initialFilters.maxPrice || ""}
-                  onChange={(e) =>
-                    updateFilters(
-                      "maxPrice",
-                      e.target.value ? parseInt(e.target.value) : null
-                    )
-                  }
-                  placeholder="999"
-                />
-              </div>
-            </div>
           </div>
         )}
         <Separator />

@@ -317,26 +317,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
         );
       }
 
-      if (filters.minPrice !== undefined) {
-        const minPrice = Number(filters.minPrice);
-        products = products.filter((product) => product.price >= minPrice);
-      }
-
-      if (filters.maxPrice !== undefined) {
-        const maxPrice = Number(filters.maxPrice);
-        products = products.filter((product) => product.price <= maxPrice);
-      }
-
-      // Update pagination info
       const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
       const hasMore = snapshot.docs.length === pageSize;
       const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
 
-      // Update store with both regular pagination and lazy loading setup
       set({
         products,
         allPageProducts: products,
-        productsToDisplay: products.slice(0, 4), // Initial lazy loading - show first 4 products
+        productsToDisplay: products.slice(0, 4),
         loading: false,
         error: null,
         lastDocument: lastDoc,
@@ -356,7 +344,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
   },
 
-  // Fetch products for a specific page (with lazy loading support)
   fetchProductsForPage: async (filters: ProductFilters = {}, page = 1) => {
     set({ loading: true, error: null });
 
@@ -364,7 +351,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
       const productRef = collection(fireDB, "products");
       const pageSize = get().pagination.pageSize;
 
-      // Build the query with filters
       let baseQuery = query(productRef);
 
       if (filters.gender) {
@@ -374,13 +360,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
       if (filters.category) {
         baseQuery = query(baseQuery, where("category", "==", filters.category));
       }
-
-      // Get total count for pagination info
-      // const countSnapshot = await getDocs(baseQuery);
-      // const totalItems = countSnapshot.size;
-      // const totalPages = Math.ceil(totalItems / pageSize);
-
-      // Apply sorting
       let sortField = "createdAt";
       let sortDirection: "desc" | "asc" = "desc";
 
@@ -401,12 +380,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
         }
       }
 
-      // Calculate skip for pagination
       const skip = (page - 1) * pageSize;
 
-      // This implementation uses a dummy solution for skip
-      // In production, for better performance, implement a proper pagination strategy
-      // like cursor-based pagination or using query snapshots
       const allProductsQuery = query(
         baseQuery,
         orderBy(sortField, sortDirection)
@@ -421,7 +396,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
           doc.data().createdAt,
       })) as (ProductData & { id: string })[];
 
-      // Apply client-side filters
       let filteredProducts = allProducts;
 
       if (filters.color) {
@@ -439,20 +413,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
               (size) => size.name.toLowerCase() === filters.size?.toLowerCase()
             )
           )
-        );
-      }
-
-      if (filters.minPrice !== undefined) {
-        const minPrice = Number(filters.minPrice);
-        filteredProducts = filteredProducts.filter(
-          (product) => product.price >= minPrice
-        );
-      }
-
-      if (filters.maxPrice !== undefined) {
-        const maxPrice = Number(filters.maxPrice);
-        filteredProducts = filteredProducts.filter(
-          (product) => product.price <= maxPrice
         );
       }
 
