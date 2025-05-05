@@ -62,8 +62,6 @@ const ProductGrid = ({ filters }: ProductGridProps) => {
 
     if (filters.color) f.color = filters.color;
     if (filters.size) f.size = filters.size;
-    if (filters.minPrice) f.minPrice = Number(filters.minPrice);
-    if (filters.maxPrice) f.maxPrice = Number(filters.maxPrice);
     if (filters.sort) f.sort = filters.sort;
 
     return f;
