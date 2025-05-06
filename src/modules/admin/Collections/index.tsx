@@ -1,6 +1,6 @@
 import React from "react";
 
-import CollectionManagement from "./CollectionManagement";
+import CollectionManagement from "./components/CollectionManagement";
 
 const Collections = () => {
   return (

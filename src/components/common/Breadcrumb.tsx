@@ -2,6 +2,7 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import React, { Fragment } from "react";
 
+import { cn } from "@/lib/utils";
 import { ProductData, ProductFilters } from "@/types/product.types";
 
 interface BreadcrumbProps {
@@ -60,21 +61,24 @@ const Breadcrumb = ({ filters, product, className = "" }: BreadcrumbProps) => {
 
   return (
     <nav className={`flex ${className}`} aria-label="Breadcrumb">
-      <ol className="flex items-center space-x-1 text-sm text-gray-500">
+      <ol className="flex items-center space-x-1 text-sm text-muted-foreground">
         {crumbs.map((crumb, index) => (
           <Fragment key={index}>
             {index > 0 && (
-              <ChevronRight className="mx-1 size-4 text-gray-400" />
+              <ChevronRight className="mx-1 size-4 text-muted-foreground" />
             )}
             <li>
               {crumb.current ? (
-                <p className="font-medium text-gray-900 truncate max-w-[150px] sm:max-w-[300px] md:max-w-[500px]">
+                <p className="font-medium text-foreground truncate max-w-[150px] sm:max-w-[300px] md:max-w-[500px]">
                   {crumb.label}
                 </p>
               ) : (
                 <Link
                   href={crumb.href}
-                  className="hover:text-primary transition-colors"
+                  className={cn(
+                    "hover:text-primary transition-colors",
+                    "dark:hover:text-accent-foreground"
+                  )}
                 >
                   {crumb.label}
                 </Link>

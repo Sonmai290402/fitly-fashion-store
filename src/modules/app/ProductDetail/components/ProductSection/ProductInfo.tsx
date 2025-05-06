@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  Gift,
-  Loader,
-  Minus,
-  Package,
-  Plus,
-  ShoppingBag,
-  ShoppingCart,
-  Truck,
-} from "lucide-react";
+import clsx from "clsx";
+import { Loader, Minus, Plus, ShoppingBag, ShoppingCart } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -19,6 +11,8 @@ import { Separator } from "@/components/ui/separator";
 import { useCartStore } from "@/store/cartStore";
 import { ProductData } from "@/types/product.types";
 import { formatCurrency } from "@/utils/formatCurrency";
+
+import { CUSTOMER_SERVICE } from "../ProductDetails.constants";
 
 type ProductInfoProps = {
   product: ProductData;
@@ -165,11 +159,12 @@ const ProductInfo = ({
               <button
                 key={color.name || index}
                 onClick={() => onColorSelect(index)}
-                className={`size-8 rounded-full border transition-all ${
+                className={clsx(
+                  "size-8 rounded-full border border-input transition-all",
                   index === selectedColorIndex
                     ? "ring-1 ring-primary ring-offset-2 scale-105"
                     : "hover:scale-105"
-                }`}
+                )}
                 style={{ backgroundColor: color.colorCode }}
                 title={color.name}
                 aria-label={`Select ${color.name} color`}
@@ -270,34 +265,19 @@ const ProductInfo = ({
       )}
 
       <Separator className="my-1" />
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="flex items-center gap-3">
-          <Truck className="size-8 sm:size-10 flex-shrink-0" />
-          <div>
-            <p className="font-bold text-sm sm:text-base">Free Shipping</p>
-            <p className="text-xs sm:text-sm text-gray-600">
-              On all U.S. orders over $100
-            </p>
+      <div className="flex flex-col gap-3">
+        {CUSTOMER_SERVICE.map((service) => (
+          <div
+            key={service.title}
+            className="flex items-center gap-3 p-1 sm:p-2 bg-card rounded-md"
+          >
+            <span>{service.icon}</span>
+
+            <span className="font-bold text-sm sm:text-base">
+              {service.title}
+            </span>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Package className="size-8 sm:size-10 flex-shrink-0" />
-          <div>
-            <p className="font-bold text-sm sm:text-base">Easy returns</p>
-            <p className="text-xs sm:text-sm text-gray-600">
-              30 day return policy
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Gift className="size-8 sm:size-10 flex-shrink-0" />
-          <div>
-            <p className="font-bold text-sm sm:text-base">Gift Wrapping</p>
-            <p className="text-xs sm:text-sm text-gray-600">
-              Available at checkout
-            </p>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );

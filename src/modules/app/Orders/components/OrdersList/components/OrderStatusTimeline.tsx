@@ -34,7 +34,7 @@ export const OrderStatusTimeline = ({ status }: { status: OrderStatus }) => {
                   ${
                     index <= currentStatusIndex
                       ? "bg-primary text-white"
-                      : "bg-gray-200 text-gray-400"
+                      : "bg-muted text-muted-foreground"
                   }`}
             >
               {index < currentStatusIndex ? (

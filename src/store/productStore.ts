@@ -1,4 +1,3 @@
-// store/productStore.ts
 import { FirebaseError } from "firebase/app";
 import {
   addDoc,

@@ -66,9 +66,11 @@ export function ReviewList({
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : reviews.length === 0 ? (
-        <div className="bg-white p-6 rounded-lg text-center border">
+        <div className="bg-card p-6 rounded-lg text-center border">
           <h3 className="text-lg font-medium mb-2">No Reviews Yet</h3>
-          <p className="text-gray-600">Be the first to review this product.</p>
+          <p className="text-muted-foreground">
+            Be the first to review this product.
+          </p>
         </div>
       ) : (
         <>

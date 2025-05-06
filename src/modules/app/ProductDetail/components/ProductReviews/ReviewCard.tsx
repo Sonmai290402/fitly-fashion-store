@@ -182,7 +182,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
   const totalImages = review.images?.length ?? 0;
 
   return (
-    <div className="border rounded-lg p-3 mb-4 bg-white flex">
+    <div className="border rounded-lg p-3 mb-4 bg-card flex">
       <div className="flex flex-col gap-2 items-center justify-center w-25">
         <Avatar className="size-10">
           <AvatarImage
@@ -209,7 +209,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
       <div className="w-full">
         <div className="flex items-start justify-between max-h-[30px]">
-          <div className="flex items-center text-sm text-gray-500">
+          <div className="flex items-center text-sm">
             <RatingStars rating={review.rating} size="sm" />
             <span className="mx-2">•</span>
             <span>{formattedDate}</span>
@@ -221,7 +221,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
               onClick={handleToggleHelpful}
               disabled={isSubmitting || isVoting || !user}
               className={clsx(
-                "text-gray-600 p-1 hover:text-red-500",
+                "p-1",
                 isVoting && "opacity-70",
                 !user && "cursor-not-allowed opacity-50"
               )}
@@ -233,12 +233,18 @@ export function ReviewCard({ review }: ReviewCardProps) {
                   : "Mark as helpful"
               }
             >
-              <span className="text-gray-500">
+              <span className="">
                 {localHasVoted ? (
-                  <Heart fill="red" className="size-5" />
+                  <Heart
+                    fill="currentColor"
+                    className="size-5 text-destructive"
+                  />
                 ) : (
                   <Heart
-                    className={clsx("size-5", isVoting && "animate-pulse")}
+                    className={clsx(
+                      "size-5 text-muted-foreground hover:text-accent-foreground",
+                      isVoting && "animate-pulse"
+                    )}
                   />
                 )}
               </span>
@@ -253,7 +259,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
                 size="sm"
                 onClick={() => setIsDeleteModalOpen(true)}
                 disabled={loading || isSubmitting}
-                className="text-gray-600 p-1 hover:text-red-500"
+                className="p-1 text-muted-foreground hover:text-destructive"
                 title="Delete review"
               >
                 <Trash2 className="size-4" />
@@ -265,7 +271,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
         {review.title && (
           <h4 className="font-medium text-lg mb-1">{review.title}</h4>
         )}
-        <p className="text-gray-700">{review.comment}</p>
+        <p className="">{review.comment}</p>
         {hasImages && (
           <div className="mt-3 flex flex-wrap gap-2">
             {review.images?.map((image, index) => (

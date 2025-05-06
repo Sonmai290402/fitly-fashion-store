@@ -440,10 +440,6 @@ export default function FilterBar({
               <RadioGroupItem value="price-desc" id="sort-price-desc" />
               <Label htmlFor="sort-price-desc">Price: High to Low</Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="popular" id="sort-popular" />
-              <Label htmlFor="sort-popular">Popularity</Label>
-            </div>
           </div>
         </RadioGroup>
         <Separator />

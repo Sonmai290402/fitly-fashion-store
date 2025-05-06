@@ -106,25 +106,30 @@ export default function CheckoutPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-8">Checkout</h1>
+      <h1 className="text-2xl font-bold mb-8 dark:text-gray-100">Checkout</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="space-y-4 p-6 border rounded-lg">
-                <h2 className="text-xl font-semibold">Shipping Address</h2>
+              <div className="space-y-4 p-6 border rounded-lg dark:border-gray-700 dark:bg-gray-900/50">
+                <h2 className="text-xl font-semibold dark:text-gray-100">
+                  Shipping Address
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-4">
                   <FormField
                     control={form.control}
                     name="shipping.fullName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Full Name</FormLabel>
+                        <FormLabel className="dark:text-gray-300">
+                          Full Name
+                        </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Enter your full name"
                             {...field}
+                            className="dark:bg-gray-800 dark:border-gray-700"
                           />
                         </FormControl>
                         <FormMessage />
@@ -137,9 +142,15 @@ export default function CheckoutPage() {
                     name="shipping.phoneNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel className="dark:text-gray-300">
+                          Phone Number
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder="0123456789" {...field} />
+                          <Input
+                            placeholder="0123456789"
+                            {...field}
+                            className="dark:bg-gray-800 dark:border-gray-700"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -151,9 +162,15 @@ export default function CheckoutPage() {
                     name="shipping.detailAddress"
                     render={({ field }) => (
                       <FormItem className="md:col-span-2">
-                        <FormLabel>Address</FormLabel>
+                        <FormLabel className="dark:text-gray-300">
+                          Address
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter the address" {...field} />
+                          <Input
+                            placeholder="Enter the address"
+                            {...field}
+                            className="dark:bg-gray-800 dark:border-gray-700"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -165,9 +182,15 @@ export default function CheckoutPage() {
                     name="shipping.district"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel>District</FormLabel>
+                        <FormLabel className="dark:text-gray-300">
+                          District
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter the district" {...field} />
+                          <Input
+                            placeholder="Enter the district"
+                            {...field}
+                            className="dark:bg-gray-800 dark:border-gray-700"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -179,9 +202,15 @@ export default function CheckoutPage() {
                     name="shipping.city"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel>City</FormLabel>
+                        <FormLabel className="dark:text-gray-300">
+                          City
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder="Hanoi" {...field} />
+                          <Input
+                            placeholder="Hanoi"
+                            {...field}
+                            className="dark:bg-gray-800 dark:border-gray-700"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -190,8 +219,10 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="space-y-4 p-6 border rounded-lg">
-                <h2 className="text-xl font-semibold">Payment Method</h2>
+              <div className="space-y-4 p-6 border rounded-lg dark:border-gray-700 dark:bg-gray-900/50">
+                <h2 className="text-xl font-semibold dark:text-gray-100">
+                  Payment Method
+                </h2>
                 <FormField
                   control={form.control}
                   name="paymentMethod"
@@ -203,23 +234,23 @@ export default function CheckoutPage() {
                           onValueChange={field.onChange}
                           className="space-y-2"
                         >
-                          <div className="flex items-center space-x-2 border p-4 rounded-md">
+                          <div className="flex items-center space-x-2 border p-4 rounded-md dark:border-gray-700 dark:bg-gray-800/50 hover:dark:bg-gray-800 transition-colors">
                             <RadioGroupItem value="cash" id="cash" />
                             <FormLabel
                               htmlFor="cash"
-                              className="flex-1 cursor-pointer"
+                              className="flex-1 cursor-pointer dark:text-gray-300"
                             >
                               Cash
                             </FormLabel>
                           </div>
-                          <div className="flex items-center space-x-2 border p-4 rounded-md">
+                          <div className="flex items-center space-x-2 border p-4 rounded-md dark:border-gray-700 dark:bg-gray-800/50 hover:dark:bg-gray-800 transition-colors">
                             <RadioGroupItem
                               value="bank_transfer"
                               id="bank_transfer"
                             />
                             <FormLabel
                               htmlFor="bank_transfer"
-                              className="flex-1 cursor-pointer"
+                              className="flex-1 cursor-pointer dark:text-gray-300"
                             >
                               Bank Transfer
                             </FormLabel>
@@ -235,8 +266,10 @@ export default function CheckoutPage() {
           </Form>
         </div>
 
-        <div className="sticky top-24 bg-white border rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+        <div className="sticky top-24 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4 dark:text-gray-100">
+            Order Summary
+          </h2>
           <OrderSummary
             onSubmit={form.handleSubmit(onSubmit)}
             isSubmitting={isSubmitting}

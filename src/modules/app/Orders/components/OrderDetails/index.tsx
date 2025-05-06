@@ -81,7 +81,7 @@ export default function OrderDetails() {
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <Link
         href="/orders"
-        className="flex items-center gap-1 text-gray-500 mb-6 hover:text-gray-800 transition-colors"
+        className="flex items-center gap-1 text-gray-500 mb-6 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         <span>Back to Orders</span>
@@ -92,7 +92,7 @@ export default function OrderDetails() {
           <h1 className="text-2xl font-bold">
             Order #{currentOrder.orderNumber}
           </h1>
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Placed on {formatTimestamp(currentOrder.createdAt)}
           </p>
         </div>
@@ -100,12 +100,14 @@ export default function OrderDetails() {
 
       <OrderTrackingProgress order={currentOrder} />
 
-      <div className="mt-8 border rounded-lg overflow-hidden">
-        <h2 className="bg-gray-50 p-4 font-semibold">Order Items</h2>
-        <div className="divide-y">
+      <div className="mt-8 border rounded-lg overflow-hidden dark:border-gray-700">
+        <h2 className="bg-gray-50 dark:bg-gray-800 p-4 font-semibold">
+          Order Items
+        </h2>
+        <div className="divide-y dark:divide-gray-700">
           {currentOrder.items.map((item) => (
             <div key={item.id} className="p-4 flex gap-4">
-              <div className="w-16 h-16 flex-shrink-0 bg-gray-200 rounded overflow-hidden relative">
+              <div className="w-16 h-16 flex-shrink-0 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden relative">
                 {item.image && (
                   <Image
                     src={item.image}
@@ -121,13 +123,13 @@ export default function OrderDetails() {
 
                 <div className="flex flex-wrap gap-2 mt-1">
                   {item.color && (
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                    <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
                       {item.color}
                     </span>
                   )}
 
                   {item.size && (
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                    <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
                       Size: {item.size}
                     </span>
                   )}
@@ -147,8 +149,10 @@ export default function OrderDetails() {
         </div>
       </div>
 
-      <div className="mt-6 border rounded-lg overflow-hidden">
-        <h2 className="bg-gray-50 p-4 font-semibold">Order Summary</h2>
+      <div className="mt-6 border rounded-lg overflow-hidden dark:border-gray-700">
+        <h2 className="bg-gray-50 dark:bg-gray-800 p-4 font-semibold">
+          Order Summary
+        </h2>
         <div className="p-4 space-y-2">
           <div className="flex justify-between">
             <span>Subtotal</span>
@@ -158,7 +162,7 @@ export default function OrderDetails() {
             <span>Shipping</span>
             <span>{formatCurrency(currentOrder.shippingCost || 0)}</span>
           </div>
-          <div className="flex justify-between font-bold pt-2 border-t">
+          <div className="flex justify-between font-bold pt-2 border-t dark:border-gray-700">
             <span>Total</span>
             <span>{formatCurrency(currentOrder.total)}</span>
           </div>
@@ -166,8 +170,10 @@ export default function OrderDetails() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6">
-        <div className="border rounded-lg overflow-hidden">
-          <h2 className="bg-gray-50 p-4 font-semibold">Shipping Address</h2>
+        <div className="border rounded-lg overflow-hidden dark:border-gray-700">
+          <h2 className="bg-gray-50 dark:bg-gray-800 p-4 font-semibold">
+            Shipping Address
+          </h2>
           <div className="p-4">
             <p className="font-medium">
               {currentOrder.shippingAddress.fullName}
@@ -186,16 +192,18 @@ export default function OrderDetails() {
         </div>
       </div>
 
-      <div className="mt-6 border rounded-lg overflow-hidden">
-        <h2 className="bg-gray-50 p-4 font-semibold">Order History</h2>
+      <div className="mt-6 border rounded-lg overflow-hidden dark:border-gray-700">
+        <h2 className="bg-gray-50 dark:bg-gray-800 p-4 font-semibold">
+          Order History
+        </h2>
         <div className="p-4">
-          <ol className="relative border-l border-gray-200 ml-3">
+          <ol className="relative border-l border-gray-200 dark:border-gray-700 ml-3">
             {currentOrder.statusHistory
               .slice()
               .reverse()
               .map((history, index) => (
                 <li key={index} className="mb-6 ml-6">
-                  <span className="absolute flex items-center justify-center w-6 h-6 bg-white rounded-full -left-3 ring-8 ring-white">
+                  <span className="absolute flex items-center justify-center w-6 h-6 bg-white dark:bg-gray-900 rounded-full -left-3 ring-8 ring-white dark:ring-gray-900">
                     <div className="w-3 h-3 rounded-full bg-primary" />
                   </span>
                   <Badge
@@ -204,11 +212,11 @@ export default function OrderDetails() {
                   >
                     {statusMap[history.status].label}
                   </Badge>
-                  <time className="block text-sm text-gray-500">
+                  <time className="block text-sm text-gray-500 dark:text-gray-400">
                     {formatTimestamp(history.timestamp)}
                   </time>
                   {history.comment && (
-                    <p className="text-sm text-gray-700 mt-1">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
                       {history.comment}
                     </p>
                   )}

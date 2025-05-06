@@ -26,7 +26,6 @@ export function RatingSummary({
   );
 
   useEffect(() => {
-    // This effect will run whenever productRatings or productId changes
     const loadRatingSummary = async () => {
       if (productRatings[productId]) {
         setSummaryData(productRatings[productId]);
@@ -47,7 +46,7 @@ export function RatingSummary({
 
   if (!summaryData) {
     return (
-      <div className={`bg-white p-4 rounded-lg shadow-sm ${className}`}>
+      <div className={`bg-card p-4 rounded-lg shadow-sm ${className}`}>
         <p className="text-gray-500 text-center py-4">
           No rating data available
         </p>
@@ -63,9 +62,9 @@ export function RatingSummary({
   };
 
   return (
-    <div className={`bg-white p-4 rounded-lg shadow-sm ${className}`}>
+    <div className={`bg-card p-4 rounded-lg shadow-sm ${className}`}>
       <div className="flex flex-col md:flex-row md:items-center">
-        <div className="text-center md:text-left md:pr-6 md:border-r md:border-gray-200">
+        <div className="text-center md:text-left md:pr-6 md:border-r md:border-border">
           <div className="text-4xl font-bold">{averageRating.toFixed(1)}</div>
           <RatingStars rating={averageRating} size="lg" />
           <div className="text-sm text-gray-500 mt-1">
@@ -78,7 +77,7 @@ export function RatingSummary({
             <button
               key={star}
               onClick={() => onFilterChange?.(star.toString())}
-              className="flex items-center w-full group hover:bg-gray-50 p-1 rounded transition-colors"
+              className="flex items-center w-full group hover:bg-accent p-1 rounded transition-colors"
             >
               <div className="w-12 text-sm font-medium">{star} stars</div>
               <div className="flex-grow mx-3">

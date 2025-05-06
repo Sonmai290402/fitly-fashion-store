@@ -11,6 +11,7 @@ import { useSearchStore } from "@/store/searchStore";
 
 import { ModeToggle } from "../common/ModeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -123,9 +124,9 @@ const HeaderActions = () => {
         </DropdownMenu>
       ) : (
         <Link href="/login">
-          <button className="px-4 py-2 bg-primary text-white rounded-md font-medium">
+          <Button className="px-4 py-2 rounded-md font-medium">
             Login
-          </button>
+          </Button>
         </Link>
       )}
     </nav>

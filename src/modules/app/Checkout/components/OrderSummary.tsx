@@ -23,11 +23,13 @@ export default function OrderSummary({
   return (
     <>
       <div className="space-y-4">
-        <ul className="divide-y overflow-y-auto max-h-[400px]">
+        <ul className="divide-y dark:divide-gray-700 overflow-y-auto max-h-[400px]">
           {items.map((item) => (
             <li key={item.id} className="py-2 flex flex-col">
               <div>
-                <p className="font-medium line-clamp-1">{item.title}</p>
+                <p className="font-medium line-clamp-1 dark:text-gray-100">
+                  {item.title}
+                </p>
                 <div className="flex items-center space-x-2">
                   <Badge className="text-xs">{item.color}</Badge>
                   <Badge className="text-xs">{item.size}</Badge>
@@ -35,11 +37,11 @@ export default function OrderSummary({
               </div>
 
               <div className="flex justify-between items-center mt-2">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {item.quantity} × {formatCurrency(item.price)}
                 </p>
 
-                <p className="font-medium">
+                <p className="font-medium dark:text-gray-200">
                   {formatCurrency(item.price * item.quantity)}
                 </p>
               </div>
@@ -47,20 +49,22 @@ export default function OrderSummary({
           ))}
         </ul>
 
-        <div className="space-y-2 pt-4 border-t">
+        <div className="space-y-2 pt-4 border-t dark:border-gray-700">
           <div className="flex justify-between">
-            <span>Subtotal</span>
-            <span>{formatCurrency(subtotal)}</span>
+            <span className="dark:text-gray-300">Subtotal</span>
+            <span className="dark:text-gray-300">
+              {formatCurrency(subtotal)}
+            </span>
           </div>
           <div className="flex justify-between">
-            <span>Shipping</span>
-            <span>
+            <span className="dark:text-gray-300">Shipping</span>
+            <span className="dark:text-gray-300">
               {shippingCost === 0 ? "Free" : formatCurrency(shippingCost)}
             </span>
           </div>
-          <div className="flex justify-between font-bold pt-2 border-t">
-            <span>Total</span>
-            <span>{formatCurrency(total)}</span>
+          <div className="flex justify-between font-bold pt-2 border-t dark:border-gray-700">
+            <span className="dark:text-gray-100">Total</span>
+            <span className="dark:text-gray-100">{formatCurrency(total)}</span>
           </div>
         </div>
       </div>
@@ -75,10 +79,17 @@ export default function OrderSummary({
         {isSubmitting ? "Processing..." : "Place Order"}
       </Button>
 
-      <p className="text-xs text-gray-500 mt-4 text-center">
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
         By placing your order, you agree to our{" "}
-        <span className="underline cursor-pointer">Terms of Service </span>
-        and <span className="underline cursor-pointer"> Privacy Policy</span>.
+        <span className="underline cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+          Terms of Service{" "}
+        </span>
+        and{" "}
+        <span className="underline cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+          {" "}
+          Privacy Policy
+        </span>
+        .
       </p>
     </>
   );

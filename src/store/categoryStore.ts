@@ -68,8 +68,28 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
           doc.data().createdAt,
       })) as CategoryData[];
 
-      set({ categories, loading: false, error: null });
-      return categories;
+      const gendersRef = collection(fireDB, "genders");
+      const gendersSnapshot = await getDocs(gendersRef);
+      const genders = gendersSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        title: doc.data().title,
+      }));
+
+      const genderPriorityMap = new Map();
+      genders.forEach((gender) => {
+        if (gender.title === "Men") genderPriorityMap.set(gender.id, 1);
+        else if (gender.title === "Women") genderPriorityMap.set(gender.id, 2);
+        else genderPriorityMap.set(gender.id, 3); // Any other gender has lowest priority
+      });
+
+      const sortedCategories = [...categories].sort((a, b) => {
+        const priorityA = genderPriorityMap.get(a.genderId) || 99;
+        const priorityB = genderPriorityMap.get(b.genderId) || 99;
+        return priorityA - priorityB;
+      });
+
+      set({ categories: sortedCategories, loading: false, error: null });
+      return sortedCategories;
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
       handleFirebaseError(error as FirebaseError);

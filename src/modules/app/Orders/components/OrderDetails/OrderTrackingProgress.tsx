@@ -31,14 +31,16 @@ export function OrderTrackingProgress({ order }: { order: OrderData }) {
               <div className="relative flex flex-col items-center">
                 <div
                   className={`rounded-full transition duration-500 ease-in-out h-12 w-12 flex items-center justify-center ${
-                    completed ? "bg-primary text-white" : "bg-gray-200"
+                    completed
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted dark:bg-muted/50"
                   }`}
                 >
                   <StepIcon className="h-6 w-6" />
                 </div>
                 <div
                   className={`text-xs text-center mt-2 ${
-                    completed ? "text-gray-900" : "text-gray-500"
+                    completed ? "text-foreground" : "text-muted-foreground"
                   }`}
                 >
                   {step.label}
@@ -48,7 +50,9 @@ export function OrderTrackingProgress({ order }: { order: OrderData }) {
               {!isLast && (
                 <div
                   className={`flex-auto border-t-2 transition duration-500 ease-in-out ${
-                    i < currentStep ? "border-primary" : "border-gray-200"
+                    i < currentStep
+                      ? "border-primary"
+                      : "border-muted dark:border-muted/50"
                   }`}
                 />
               )}
@@ -59,13 +63,15 @@ export function OrderTrackingProgress({ order }: { order: OrderData }) {
 
       {order.trackingNumber && (
         <div className="mt-6 text-center text-sm">
-          <p className="font-medium">Tracking Number: {order.trackingNumber}</p>
+          <p className="font-medium text-foreground">
+            Tracking Number: {order.trackingNumber}
+          </p>
           {order.trackingUrl && (
             <a
               href={order.trackingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-primary hover:underline hover:text-primary/90"
             >
               Track Package
             </a>

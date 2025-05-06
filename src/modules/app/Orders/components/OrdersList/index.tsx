@@ -10,6 +10,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -123,32 +129,52 @@ export default function OrderList() {
 
       {orders.length > 0 && (
         <div className="mb-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-          <div className="bg-white p-4 rounded-lg border shadow-sm text-center">
-            <p className="text-2xl font-bold">{orders.length}</p>
-            <p className="text-sm text-gray-500">Total Orders</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border shadow-sm text-center">
-            <p className="text-2xl font-bold">{orderStats.pending || 0}</p>
-            <p className="text-sm text-gray-500">Pending</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border shadow-sm text-center">
-            <p className="text-2xl font-bold">
-              {(orderStats.processing || 0) + (orderStats.shipped || 0)}
-            </p>
-            <p className="text-sm text-gray-500">In Progress</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border shadow-sm text-center">
-            <p className="text-2xl font-bold text-green-600">
-              {orderStats.delivered || 0}
-            </p>
-            <p className="text-sm text-gray-500">Delivered</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border shadow-sm text-center">
-            <p className="text-2xl font-bold text-red-600">
-              {orderStats.cancelled || 0}
-            </p>
-            <p className="text-sm text-gray-500">Cancelled</p>
-          </div>
+          <Card className="p-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <CardTitle className="text-2xl font-bold">
+                {orders.length}
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Total Orders
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="p-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <CardTitle className="text-2xl font-bold">
+                {orderStats.pending || 0}
+              </CardTitle>
+              <CardDescription className="text-sm">Pending</CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="p-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <CardTitle className="text-2xl font-bold">
+                {(orderStats.processing || 0) + (orderStats.shipped || 0)}
+              </CardTitle>
+              <CardDescription className="text-sm">In Progress</CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="p-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <CardTitle className="text-2xl font-bold text-green-600">
+                {orderStats.delivered || 0}
+              </CardTitle>
+              <CardDescription className="text-sm">Delivered</CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="p-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <CardTitle className="text-2xl font-bold text-red-600">
+                {orderStats.cancelled || 0}
+              </CardTitle>
+              <CardDescription className="text-sm">Cancelled</CardDescription>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -172,12 +198,12 @@ export default function OrderList() {
       </div>
 
       {orders.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border shadow-sm">
+        <div className="text-center py-12 bg-card rounded-lg border shadow-sm">
           <Package className="h-16 w-16 mx-auto text-gray-400 mb-4" />
           <h2 className="text-xl font-medium mb-4">
             You haven&apos;t placed any orders yet
           </h2>
-          <p className="text-gray-600 mb-8">
+          <p className="text-muted-foreground mb-8">
             Start shopping and your orders will appear here.
           </p>
           <Button asChild>
@@ -185,12 +211,12 @@ export default function OrderList() {
           </Button>
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border shadow-sm">
+        <div className="text-center py-12 bg-card rounded-lg border shadow-sm">
           <Package className="h-16 w-16 mx-auto text-gray-400 mb-4" />
           <h2 className="text-xl font-medium mb-4">
             No {statusFilter} orders found
           </h2>
-          <p className="text-gray-600 mb-8">
+          <p className="text-muted-foreground mb-8">
             You don&apos;t have any orders with status &apos;{statusFilter}
             &apos;.
           </p>
@@ -203,22 +229,26 @@ export default function OrderList() {
           {filteredOrders.map((order) => (
             <div
               key={order.id}
-              className="border rounded-lg overflow-hidden bg-white shadow-sm transition-all hover:shadow-md"
+              className="border rounded-lg overflow-hidden bg-card shadow-sm transition-all hover:shadow-md"
             >
-              <div className="bg-gray-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="bg-accent p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex flex-col sm:flex-row sm:gap-6">
                   <div>
-                    <span className="text-sm text-gray-500">Order #</span>
+                    <span className="text-sm text-muted-foreground">
+                      Order #
+                    </span>
                     <p className="font-medium">{order.orderNumber}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-500">Placed on</span>
+                    <span className="text-sm text-muted-foreground">
+                      Placed on
+                    </span>
                     <p className="font-medium">
                       {formatTimestamp(order.createdAt)}
                     </p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-500">Total</span>
+                    <span className="text-sm text-muted-foreground">Total</span>
                     <p className="font-medium">{formatCurrency(order.total)}</p>
                   </div>
                 </div>
@@ -245,7 +275,7 @@ export default function OrderList() {
                     {order.items.slice(0, 2).map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50"
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent"
                       >
                         <div className="w-16 h-16 flex-shrink-0 bg-gray-200 rounded overflow-hidden relative">
                           {item.image && (
