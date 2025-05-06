@@ -219,7 +219,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
   },
 
-  // Fetch products with pagination and infinite scroll support
   fetchProducts: async (
     filters: ProductFilters = {},
     resetPagination = true
@@ -243,7 +242,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
       const productRef = collection(fireDB, "products");
       const pageSize = get().pagination.pageSize;
 
-      // Build the query with filters
       let baseQuery: Query = query(productRef);
 
       if (filters.gender) {
@@ -257,12 +255,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
       const countSnapshot = await getDocs(baseQuery);
       const totalItems = countSnapshot.size;
 
-      // Always sort by createdAt in Firestore query - we'll handle price sorting client-side
       let sortField = "createdAt";
       let sortDirection: "desc" | "asc" = "desc";
 
-      // Note: We're just using a basic field sort in Firestore, and will handle price sorting
-      // in memory after fetching the products
       if (filters.sort && filters.sort === "newest") {
         sortField = "createdAt";
         sortDirection = "desc";
@@ -374,12 +369,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
         baseQuery = query(baseQuery, where("category", "==", filters.category));
       }
 
-      // Always sort by createdAt in Firestore query - we'll handle price sorting client-side
       let sortField = "createdAt";
       let sortDirection: "desc" | "asc" = "desc";
 
-      // Note: We're just using a basic field sort in Firestore, and will handle price sorting
-      // in memory after fetching the products
       if (filters.sort && filters.sort === "newest") {
         sortField = "createdAt";
         sortDirection = "desc";
@@ -441,19 +433,16 @@ export const useProductStore = create<ProductState>((set, get) => ({
               (a, b) => b.effectivePrice - a.effectivePrice
             );
             break;
-          // newest sorting already handled in the Firestore query
         }
       }
 
-      // Get paginated slice
       const skip = (page - 1) * pageSize;
       const paginatedProducts = filteredProducts.slice(skip, skip + pageSize);
 
-      // Update store
       set({
         products: filteredProducts,
         allPageProducts: paginatedProducts,
-        productsToDisplay: paginatedProducts.slice(0, 4), // Initial lazy loading
+        productsToDisplay: paginatedProducts.slice(0, 4),
         loading: false,
         error: null,
         pagination: {
@@ -475,7 +464,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
   },
 
-  // Fetch more products (infinite scroll)
   fetchMoreProducts: async (filters: ProductFilters = {}) => {
     const { lastDocument, hasMore, loading, pagination } = get();
 
@@ -489,7 +477,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
       const productRef = collection(fireDB, "products");
       const pageSize = pagination.pageSize;
 
-      // Build the query with filters
       let baseQuery: Query = query(productRef);
 
       if (filters.gender) {
@@ -500,18 +487,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
         baseQuery = query(baseQuery, where("category", "==", filters.category));
       }
 
-      // Always sort by createdAt in Firestore query - we'll handle price sorting client-side
       let sortField = "createdAt";
       let sortDirection: "desc" | "asc" = "desc";
 
-      // Note: We're just using a basic field sort in Firestore, and will handle price sorting
-      // in memory after fetching the products
       if (filters.sort && filters.sort === "newest") {
         sortField = "createdAt";
         sortDirection = "desc";
       }
 
-      // Apply ordering and pagination with startAfter
       const paginatedQuery = query(
         baseQuery,
         orderBy(sortField, sortDirection),
@@ -521,11 +504,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
       const snapshot = await getDocs(paginatedQuery);
 
-      // Process results with effectivePrice calculation
       let newProducts = snapshot.docs.map((doc) => {
         const data = doc.data() as ProductData;
 
-        // Calculate the effective price for each product (use sale_price if it exists and is > 0)
         const effectivePrice =
           data.sale_price && data.sale_price > 0
             ? data.sale_price
@@ -539,7 +520,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
         };
       }) as (ProductData & { id: string; effectivePrice: number })[];
 
-      // Apply client-side filters if needed
       if (filters.color) {
         newProducts = newProducts.filter((product) =>
           product.colors?.some(
