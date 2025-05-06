@@ -4,10 +4,14 @@ import React from "react";
 
 import { ThemeProvider } from "@/components/common/theme-provider";
 import Sidebar from "@/components/sidebar";
+import { useHasHydrated } from "@/hooks/useHasHydrated";
 import { useAuthListener } from "@/store/authStore";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   useAuthListener();
+  const hasHydrated = useHasHydrated();
+  if (!hasHydrated) return null;
+
   return (
     <ThemeProvider
       attribute="class"

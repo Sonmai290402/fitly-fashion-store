@@ -20,10 +20,7 @@ const Sidebar = () => {
       {!hasHydrated ? (
         <div className="flex flex-col gap-2">
           {[...Array(5)].map((_, i) => (
-            <Skeleton
-              key={i}
-              className="h-14 w-full rounded-lg animate-pulse bg-gradient-to-r from-gray-200 to-gray-100"
-            />
+            <Skeleton key={i} className="h-14 w-full rounded-lg" />
           ))}
         </div>
       ) : (

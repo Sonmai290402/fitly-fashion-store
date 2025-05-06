@@ -9,6 +9,7 @@ import StarterKit from "@tiptap/starter-kit";
 import React from "react";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { TextAlignButton } from "../tiptap-ui/text-align-button";
 
@@ -51,9 +52,7 @@ const TipTapEditor = ({ value, onChange, placeholder }: TipTapEditorProps) => {
   });
 
   if (!editor) {
-    return (
-      <div className="h-[150px] border rounded-md animate-pulse bg-muted/50" />
-    );
+    return <Skeleton className="h-[150px] rounded-md" />;
   }
 
   return (

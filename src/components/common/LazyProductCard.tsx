@@ -2,6 +2,7 @@
 
 import React, { memo, useEffect, useState } from "react";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import useScrollView from "@/hooks/useScrollView";
 import { ProductData } from "@/types/product.types";
 
@@ -31,7 +32,7 @@ export const LazyProductCard = memo(({ product }: LazyProductCardProps) => {
       {isVisible ? (
         <ProductCard product={product} />
       ) : (
-        <div className="h-[350px] bg-gray-100 dark:bg-gray-800 rounded-md animate-pulse"></div>
+        <Skeleton className="h-[350px] rounded-md" />
       )}
     </div>
   );

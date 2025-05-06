@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -45,6 +44,8 @@ export default function FilterBar({
   const { colors, fetchColors } = useColorStore();
   const { sizes, fetchSizes } = useSizeStore();
 
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+
   useEffect(() => {
     fetchColors();
     fetchSizes();
@@ -78,15 +79,22 @@ export default function FilterBar({
   }, [fetchGenders]);
 
   useEffect(() => {
-    if (selectedGenderId) {
-      fetchCategories(selectedGenderId);
-    } else {
-      fetchCategories();
-    }
+    const loadCategories = async () => {
+      if (selectedGenderId) {
+        await fetchCategories(selectedGenderId);
+      } else {
+        await fetchCategories();
+      }
+      setCategoriesLoaded(true);
+    };
+
+    loadCategories();
   }, [selectedGenderId, fetchCategories]);
 
   useEffect(() => {
+    // Only validate and potentially remove the category filter after categories are loaded
     if (
+      categoriesLoaded &&
       initialFilters.gender &&
       initialFilters.category &&
       !isCategoryValidForGender
@@ -98,6 +106,7 @@ export default function FilterBar({
       });
     }
   }, [
+    categoriesLoaded,
     initialFilters.gender,
     initialFilters.category,
     isCategoryValidForGender,
@@ -131,7 +140,7 @@ export default function FilterBar({
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       });
 
-      if (isMobile && closeMobileFilters && key !== "sort") {
+      if (isMobile && closeMobileFilters) {
         closeMobileFilters();
       }
     },
@@ -208,11 +217,18 @@ export default function FilterBar({
   }, []);
 
   const clearAllFilters = useCallback(() => {
-    router.push(pathname, { scroll: false });
+    // Create new params with only the sort parameter preserved (if it exists)
+    const params = new URLSearchParams();
+    if (searchParams.has("sort")) {
+      params.set("sort", searchParams.get("sort")!);
+    }
+
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+
     if (isMobile && closeMobileFilters) {
       closeMobileFilters();
     }
-  }, [router, pathname, isMobile, closeMobileFilters]);
+  }, [router, pathname, searchParams, isMobile, closeMobileFilters]);
 
   const activeFiltersCount = Object.keys(initialFilters).filter(
     (key) => key !== "sort"
@@ -420,36 +436,12 @@ export default function FilterBar({
         <Separator />
       </div>
 
-      <div className="mb-4 space-y-4">
-        <h3 className="font-medium">Sort By</h3>
-
-        <RadioGroup
-          defaultValue={initialFilters.sort || "newest"}
-          onValueChange={(value) => updateFilters("sort", value)}
-        >
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="newest" id="sort-newest" />
-              <Label htmlFor="sort-newest">Newest Arrivals</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="price-asc" id="sort-price-asc" />
-              <Label htmlFor="sort-price-asc">Price: Low to High</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="price-desc" id="sort-price-desc" />
-              <Label htmlFor="sort-price-desc">Price: High to Low</Label>
-            </div>
-          </div>
-        </RadioGroup>
-        <Separator />
-      </div>
-
       {activeFiltersCount > 0 && (
         <div className="mb-4">
           <h3 className="text-sm font-medium mb-2">Active Filters:</h3>
           <div className="flex flex-wrap gap-2">
             {Object.entries(initialFilters).map(([key, value]) => {
+              // Skip sort from appearing in active filters
               if (key === "sort") return null;
 
               let label = "";

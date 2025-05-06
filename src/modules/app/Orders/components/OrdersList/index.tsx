@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/authStore";
@@ -104,9 +105,9 @@ export default function OrderList() {
     return (
       <div className="container max-w-4xl mx-auto py-5 md:py-16 px-4">
         <h1 className="text-2xl font-bold mb-8 text-center">My Orders</h1>
-        <div className="animate-pulse space-y-6">
+        <div className="space-y-6">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="h-32 bg-gray-200 rounded-lg"></div>
+            <Skeleton key={n} className="h-32 w-full rounded-lg" />
           ))}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { StatsCardProps } from "../types";
+import { StatsCardProps } from "../dashboard.types";
 
 const StatsCard = ({ title, value, description, icon }: StatsCardProps) => {
   return (

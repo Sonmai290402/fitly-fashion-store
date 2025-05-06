@@ -12,7 +12,7 @@ interface FeaturedReviewCardProps {
 
 export function FeaturedReviewCard({ review }: FeaturedReviewCardProps) {
   return (
-    <div className="flex flex-col md:flex-row bg-white dark:bg-card rounded-xl shadow-lg dark:shadow-lg dark:shadow-black/20">
+    <div className="flex flex-col md:flex-row bg-card rounded-xl shadow-md dark:shadow-lg dark:shadow-black/20">
       <Link
         href={`/product/${review.productId}`}
         className="w-full md:w-1/2 p-6 flex flex-col"
@@ -77,7 +77,7 @@ export function FeaturedReviewCard({ review }: FeaturedReviewCardProps) {
 
         <div className="prose max-w-none mb-6 dark:prose-invert">
           <Quote size={20} className="dark:text-gray-400" />
-          <p className="line-clamp-4 md:line-clamp-6 text-gray-700 dark:text-gray-300">
+          <p className="line-clamp-4 md:line-clamp-6 text-gray-700 dark:text-gray-300 text-justify">
             {review.comment}
           </p>
         </div>

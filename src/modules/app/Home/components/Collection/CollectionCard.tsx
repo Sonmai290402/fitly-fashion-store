@@ -3,6 +3,7 @@
 import React, { memo, useEffect, useState } from "react";
 
 import ProductCard from "@/components/common/ProductCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useProductStore } from "@/store/productStore";
 import { ProductData } from "@/types/product.types";
 
@@ -23,9 +24,7 @@ const CollectionCard = memo(({ productId }: { productId: string }) => {
   }, [productId, fetchProductById]);
 
   if (loading) {
-    return (
-      <div className="w-full h-full aspect-[3/4] rounded-lg bg-gray-100 animate-pulse" />
-    );
+    return <Skeleton className="w-full h-full aspect-[3/4] rounded-lg" />;
   }
 
   if (!product) {

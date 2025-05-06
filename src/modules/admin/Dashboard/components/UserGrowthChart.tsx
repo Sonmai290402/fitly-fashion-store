@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { UserGrowthData } from "../types";
+import { UserGrowthData } from "../dashboard.types";
 
 interface UserGrowthChartProps {
   userGrowth: UserGrowthData[];

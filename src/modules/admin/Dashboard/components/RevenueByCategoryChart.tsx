@@ -10,7 +10,7 @@ import {
 import { DASHBOARD_COLORS } from "@/store/dashboardStore";
 import { formatCurrency } from "@/utils/formatCurrency";
 
-import { ChartDataPoint } from "../types";
+import { ChartDataPoint } from "../dashboard.types";
 
 interface RevenueByCategoryChartProps {
   revenueByCategory: ChartDataPoint[];

@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 
-import { OrderStatusBadgeProps } from "../types";
+import { OrderStatusBadgeProps } from "../dashboard.types";
 
 const OrderStatusBadge = ({ status }: OrderStatusBadgeProps) => {
   const statusMap: Record<string, { color: string; label: string }> = {

@@ -20,7 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { TopProductData } from "../types";
+import { TopProductData } from "../dashboard.types";
 
 interface TopProductsChartProps {
   topProducts: TopProductData[];

@@ -3,40 +3,65 @@
 import { CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { memo, useCallback, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { useOrderStore } from "@/store/orderStore";
+import { OrderItem as OrderItemType } from "@/types/order.types";
 import { formatCurrency } from "@/utils/formatCurrency";
+
+const OrderItem = memo(({ item }: { item: OrderItemType }) => (
+  <li className="py-3 flex justify-between">
+    <div>
+      <p className="font-medium">{item.title}</p>
+      <p className="text-sm text-muted-foreground">
+        {item.color && `${item.color}`}
+        {item.size && item.color && " / "}
+        {item.size && `Size: ${item.size}`}
+      </p>
+      <p className="text-sm">Quantity: {item.quantity}</p>
+    </div>
+    <p className="font-medium">{formatCurrency(item.price)}</p>
+  </li>
+));
+OrderItem.displayName = "OrderItem";
+
+const LoadingSkeleton = () => (
+  <div className="container max-w-2xl mx-auto py-16 px-4 text-center">
+    <div className="space-y-6">
+      <Skeleton className="h-12 w-12 rounded-full mx-auto" />
+      <Skeleton className="h-8 w-1/2 mx-auto" />
+      <Skeleton className="h-4 w-2/3 mx-auto" />
+      <Skeleton className="h-24 w-full mx-auto" />
+    </div>
+  </div>
+);
 
 export default function OrderConfirmation() {
   const { id } = useParams();
   const { currentOrder, fetchOrderById, loading } = useOrderStore();
 
-  useEffect(() => {
+  const handleFetchOrder = useCallback(() => {
     if (id) {
       fetchOrderById(id as string);
     }
   }, [id, fetchOrderById]);
 
+  useEffect(() => {
+    handleFetchOrder();
+  }, [handleFetchOrder]);
+
   if (loading) {
-    return (
-      <div className="container max-w-2xl mx-auto py-16 px-4 text-center">
-        <div className="animate-pulse space-y-6">
-          <div className="h-12 bg-gray-200 rounded-full w-12 mx-auto"></div>
-          <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto"></div>
-          <div className="h-24 bg-gray-200 rounded w-full mx-auto"></div>
-        </div>
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   if (!currentOrder) {
     return (
       <div className="container max-w-2xl mx-auto py-16 px-4 text-center">
         <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
-        <p className="text-gray-600 mb-8">
+        <p className="text-muted-foreground mb-8">
           We couldn&apos;t find any information about this order.
         </p>
         <Button asChild>
@@ -50,64 +75,50 @@ export default function OrderConfirmation() {
     <div className="container max-w-2xl mx-auto py-16 px-4">
       <div className="text-center mb-10">
         <div className="flex justify-center mb-4">
-          <CheckCircle className="h-16 w-16 text-green-500" />
+          <CheckCircle className="h-16 w-16 text-green-500 dark:text-green-400" />
         </div>
         <h1 className="text-3xl font-bold mb-2">Order Confirmed!</h1>
-        <p className="text-gray-600 mb-1">
+        <p className="text-muted-foreground mb-1">
           Thank you for your purchase. Your order has been received.
         </p>
-        <p className="text-gray-800 font-medium">
-          Order #{currentOrder.orderNumber}
-        </p>
+        <p className="font-medium">Order #{currentOrder.orderNumber}</p>
       </div>
 
-      <div className="bg-white border rounded-lg shadow-sm mb-8">
-        <h2 className="text-lg font-bold mb-4 px-6 py-4 text-center">
+      <div className="bg-card border rounded-lg shadow-sm mb-8 dark:border-border">
+        <h2 className="text-lg font-bold mb-4 px-6 py-4 text-center border-b">
           Order Summary
         </h2>
-        <ul className="divide-y overflow-y-auto max-h-96 px-6">
+        <ul className="divide-y divide-border overflow-y-auto max-h-96 px-6">
           {currentOrder.items.map((item) => (
-            <li key={item.id} className="py-3 flex justify-between">
-              <div>
-                <p className="font-medium">{item.title}</p>
-                <p className="text-sm text-gray-500">
-                  {item.color && `${item.color}`}
-                  {item.size && item.color && " / "}
-                  {item.size && `Size: ${item.size}`}
-                </p>
-                <p className="text-sm">Quantity: {item.quantity}</p>
-              </div>
-              <p className="font-medium">{formatCurrency(item.price)}</p>
-            </li>
+            <OrderItem key={item.id} item={item} />
           ))}
         </ul>
-        <div className="bg-gray-50 px-6 py-4">
+        <div className={cn("px-6 py-4", "bg-muted/30 dark:bg-muted/10")}>
           <div className="flex justify-between mt-4">
-            <span className="text-sm text-gray-500">Subtotal</span>
+            <span className="text-sm text-muted-foreground">Subtotal</span>
             <span className="font-medium">
               {formatCurrency(currentOrder.subtotal)}
             </span>
           </div>
           <div className="flex justify-between mt-2">
-            <span className="text-sm text-gray-500">Shipping</span>
+            <span className="text-sm text-muted-foreground">Shipping</span>
             <span className="font-medium">
               {currentOrder.shippingCost === 0
                 ? "Free"
                 : formatCurrency(currentOrder.shippingCost || 0)}
             </span>
           </div>
-          <div className="flex justify-between font-bold pt-2 border-t">
+          <div className="flex justify-between font-bold pt-2 border-t border-border">
             <span>Total</span>
             <span>{formatCurrency(currentOrder.total)}</span>
           </div>
         </div>
       </div>
 
-      <div className="bg-white border rounded-lg p-6 shadow-sm mb-8">
+      <div className="bg-card border rounded-lg p-6 shadow-sm mb-8 dark:border-border">
         <h2 className="text-lg font-bold mb-4">Shipping Information</h2>
         <p className="font-medium">{currentOrder.shippingAddress.fullName}</p>
         <p>{currentOrder.shippingAddress.detailAddress}</p>
-
         <p>
           {currentOrder.shippingAddress.district},{" "}
           {currentOrder.shippingAddress.city}
@@ -117,7 +128,7 @@ export default function OrderConfirmation() {
         </p>
       </div>
 
-      <div className="bg-white border rounded-lg p-6 shadow-sm mb-8">
+      <div className="bg-card border rounded-lg p-6 shadow-sm mb-8 dark:border-border">
         <h2 className="text-lg font-bold mb-4">Payment</h2>
         <div className="flex justify-between">
           <p>Method:</p>
@@ -139,7 +150,7 @@ export default function OrderConfirmation() {
   );
 }
 
-function formatPaymentMethod(method: string): string {
+const formatPaymentMethod = (method: string): string => {
   switch (method) {
     case "cash":
       return "Cash";
@@ -148,4 +159,4 @@ function formatPaymentMethod(method: string): string {
     default:
       return method;
   }
-}
+};

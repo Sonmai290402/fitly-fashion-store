@@ -8,15 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import useDashboardStore from "@/store/dashboardStore";
 import { formatCurrency } from "@/utils/formatCurrency";
 
-import {
-  OrderStatusChart,
-  RecentOrdersList,
-  RevenueByCategoryChart,
-  SalesOverviewChart,
-  StatsCard,
-  TopProductsChart,
-  UserGrowthChart,
-} from "./components";
+import OrderStatusChart from "./components/OrderStatusChart";
+import RecentOrdersList from "./components/RecentOrdersList";
+import RevenueByCategoryChart from "./components/RevenueByCategoryChart";
+import SalesOverviewChart from "./components/SalesOverviewChart";
+import StatsCard from "./components/StatsCard";
+import TopProductsChart from "./components/TopProductsChart";
+import UserGrowthChart from "./components/UserGrowthChart";
 
 const AdminDashboard = () => {
   const {
@@ -94,7 +92,6 @@ const AdminDashboard = () => {
         )}
       </div>
 
-      {/* Charts */}
       <Tabs defaultValue="sales">
         <TabsList>
           <TabsTrigger value="sales">Sales</TabsTrigger>

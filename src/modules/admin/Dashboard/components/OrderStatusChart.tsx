@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/card";
 import { DASHBOARD_COLORS } from "@/store/dashboardStore";
 
-import { ChartDataPoint } from "../types";
+import { ChartDataPoint } from "../dashboard.types";
 
 interface OrderStatusChartProps {
   statusDistribution: ChartDataPoint[];

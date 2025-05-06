@@ -32,16 +32,22 @@ const CollectionGrid = ({
 
     switch (sortBy) {
       case "price-low":
-        sorted = sorted.sort(
-          (a, b) =>
-            (a.sale_price || a.price || 0) - (b.sale_price || b.price || 0)
-        );
+        sorted = sorted.sort((a, b) => {
+          const priceA =
+            a.sale_price && a.sale_price > 0 ? a.sale_price : a.price || 0;
+          const priceB =
+            b.sale_price && b.sale_price > 0 ? b.sale_price : b.price || 0;
+          return priceA - priceB;
+        });
         break;
       case "price-high":
-        sorted = sorted.sort(
-          (a, b) =>
-            (b.sale_price || b.price || 0) - (a.sale_price || a.price || 0)
-        );
+        sorted = sorted.sort((a, b) => {
+          const priceA =
+            a.sale_price && a.sale_price > 0 ? a.sale_price : a.price || 0;
+          const priceB =
+            b.sale_price && b.sale_price > 0 ? b.sale_price : b.price || 0;
+          return priceB - priceA;
+        });
         break;
       case "newest":
         sorted = sorted.sort((a, b) => {
@@ -51,10 +57,12 @@ const CollectionGrid = ({
         });
         break;
       default:
-        sorted = sorted.sort(
-          (a, b) =>
-            (a.sale_price || a.price || 0) - (b.sale_price || b.price || 0)
-        );
+        // Use newest sort as default
+        sorted = sorted.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
         break;
     }
 

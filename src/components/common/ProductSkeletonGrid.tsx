@@ -12,9 +12,9 @@ const ProductSkeletonGrid = () => {
     >
       {Array.from({ length: 8 }, (_, index) => (
         <div key={index} className="w-full">
-          <Skeleton className="aspect-[3/4] w-full rounded-lg bg-gradient-to-r from-gray-200 to-gray-100 animate-pulse" />
-          <Skeleton className="h-4 w-3/4 mt-3 rounded-lg bg-gradient-to-r from-gray-200 to-gray-100 animate-pulse" />
-          <Skeleton className="h-4 w-1/2 mt-2 rounded-lg bg-gradient-to-r from-gray-200 to-gray-100 animate-pulse" />
+          <Skeleton className="aspect-[3/4] w-full rounded-lg" />
+          <Skeleton className="h-4 w-3/4 mt-3 rounded-lg" />
+          <Skeleton className="h-4 w-1/2 mt-2 rounded-lg" />
         </div>
       ))}
     </div>

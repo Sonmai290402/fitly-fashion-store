@@ -37,5 +37,5 @@ export interface DashboardStats {
   categoryData: CategoryDataPoint[];
   ordersByStatus: OrderStatusData;
   topProducts: TopProductData[];
-  lowStockProducts: ProductData[]; // Using ProductData[] from your product types
+  lowStockProducts: ProductData[];
 }

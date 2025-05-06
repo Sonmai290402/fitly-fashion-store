@@ -1,9 +1,18 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import React, { useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import React, { useCallback, useMemo } from "react";
 
 import Breadcrumb from "@/components/common/Breadcrumb";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useGenderStore } from "@/store/genderStore";
 import { ProductFilters } from "@/types/product.types";
@@ -12,17 +21,17 @@ import FilterBar from "./components/FilterBar";
 import MobileFilterSidebar from "./components/MobileFilterSidebar";
 import ProductGrid from "./components/ProductGrid";
 
-// Separate the mobile filter sidebar to prevent it from causing re-renders
 const MobileFilters = React.memo(({ filters }: { filters: ProductFilters }) => {
   return <MobileFilterSidebar filters={filters} />;
 });
 
 MobileFilters.displayName = "MobileFilters";
 
-// Ensure ProductGrid doesn't re-render unnecessarily
 const MemoizedProductGrid = React.memo(ProductGrid);
 
 const Products = () => {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { genders } = useGenderStore();
   const { categories } = useCategoryStore();
@@ -57,20 +66,48 @@ const Products = () => {
     ? `${selectedGender.title}'s Products`
     : "All Products";
 
-  // Memoize the title to prevent re-renders
-  const PageTitle = React.memo(() => (
-    <h2 className="text-2xl font-bold text-foreground">{pageTitle}</h2>
-  ));
+  const handleSortChange = useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
 
-  PageTitle.displayName = "PageTitle";
+      if (value) {
+        params.set("sort", value);
+      } else {
+        params.delete("sort");
+      }
+
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [searchParams, pathname, router]
+  );
 
   return (
     <div className="flex flex-col max-w-7xl px-5 py-5 sm:mx-10 md:mx-15 lg:mx-20 gap-y-5">
       <Breadcrumb filters={filters} />
 
       <div className="flex items-center justify-between">
-        <PageTitle />
-        <MobileFilters filters={filters} />
+        <h2 className="text-2xl font-bold text-foreground">{pageTitle}</h2>
+        <div className="flex items-center gap-4">
+          <Select
+            value={filters.sort || "newest"}
+            onValueChange={handleSortChange}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Sort By</SelectLabel>
+                <SelectItem value="newest">Newest Arrivals</SelectItem>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <div className="lg:hidden">
+            <MobileFilters filters={filters} />
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-5">

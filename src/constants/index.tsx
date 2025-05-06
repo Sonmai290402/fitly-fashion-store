@@ -10,7 +10,6 @@ import {
   Search,
   Shirt,
   UserCog,
-  Zap,
 } from "lucide-react";
 
 export const headerActionItems = [
@@ -106,11 +105,6 @@ export const adminMenuItems = [
     url: "/admin/collections",
     title: "Collection Management",
     icon: (className?: string) => <Boxes className={className} />,
-  },
-  {
-    url: "/admin/flash-sale",
-    title: "Flash Sale",
-    icon: (className?: string) => <Zap className={className} />,
   },
 ];
 

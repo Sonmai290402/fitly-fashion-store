@@ -18,7 +18,7 @@ import {
   SalesDataPoint,
   TopProductData,
   UserGrowthData,
-} from "@/modules/admin/Dashboard/types";
+} from "@/modules/admin/Dashboard";
 import { OrderData, OrderStatus } from "@/types/order.types";
 import { ProductData } from "@/types/product.types";
 
