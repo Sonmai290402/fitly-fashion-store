@@ -22,7 +22,7 @@ const Header = () => {
     }
   }, [fetchCategories, hasHydrated]);
   return (
-    <header className="border-b border-gray-200 sticky top-0 z-100 backdrop-blur-sm bg-white/80 dark:bg-gray-900 dark:border-gray-700 transition-all duration-300">
+    <header className="border-b border-border sticky top-0 z-[100] backdrop-blur-sm bg-background/80  transition-all duration-300">
       {!user && <HeaderTop />}
 
       <div className="mx-5 md:mx-16 py-3 flex items-center">

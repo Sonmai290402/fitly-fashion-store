@@ -38,7 +38,7 @@ const CollectionCard = memo(({ productId }: { productId: string }) => {
 
   return (
     <div className="w-full h-full">
-      <ProductCard product={product} className="px-3 h-full" />
+      <ProductCard product={product} className="h-full" />
     </div>
   );
 });

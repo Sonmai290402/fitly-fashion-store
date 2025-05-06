@@ -24,14 +24,14 @@ const SwiperNavButton = ({
     >
       <button
         onClick={() => swiper.slidePrev()}
-        className="bg-primary text-white p-2 rounded-full hover:bg-primary/80 transition-colors duration-300"
+        className="bg-primary/80 text-primary-foreground p-2 rounded-full hover:bg-primary/50 transition-colors duration-300"
         aria-label="Previous slide"
       >
         <MoveLeft className="size-8" />
       </button>
       <button
         onClick={() => swiper.slideNext()}
-        className="bg-primary text-white p-2 rounded-full hover:bg-primary/80 transition-colors duration-300"
+        className="bg-primary/80 text-primary-foreground p-2 rounded-full hover:bg-primary/50 transition-colors duration-300"
         aria-label="Next slide"
       >
         <MoveRight className="size-8" />

@@ -22,13 +22,13 @@ const CollectionDropdown = ({ isOpen }: { isOpen: boolean }) => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="absolute z-100 left-0 mt-2 w-40 bg-white shadow-md rounded-lg max-h-[40vh] overflow-y-auto"
+          className="absolute z-100 left-0 mt-2 w-40 bg-background shadow-md rounded-lg max-h-[40vh] overflow-y-auto"
         >
           {collections.map(({ url, title, id }) => (
             <li key={id}>
               <Link
                 href={url || "#"}
-                className="block px-4 py-2 hover:bg-gray-200"
+                className="block px-4 py-2 hover:bg-accent hover:text-accent-foreground"
               >
                 {title}
               </Link>

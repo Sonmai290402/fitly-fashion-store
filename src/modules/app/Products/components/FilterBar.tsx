@@ -221,7 +221,7 @@ export default function FilterBar({
   return (
     <div
       className={clsx(
-        "bg-white p-4 rounded-lg shadow-md",
+        "bg-card text-card-foreground p-4 rounded-lg shadow-md border border-border",
         isMobile ? "h-full overflow-auto" : ""
       )}
     >
@@ -284,7 +284,7 @@ export default function FilterBar({
           <h3 className="font-medium">Category</h3>
           <ChevronDown
             className={clsx(
-              "w-5 h-5 transition-transform",
+              "size-5 transition-transform",
               openSections.category ? "rotate-180" : ""
             )}
           />
@@ -318,7 +318,7 @@ export default function FilterBar({
                       htmlFor={`category-${category.id}`}
                       className={clsx(
                         "cursor-pointer",
-                        !initialFilters.gender && "text-gray-400"
+                        !initialFilters.gender && "text-muted-foreground"
                       )}
                     >
                       {category.title}
@@ -327,7 +327,7 @@ export default function FilterBar({
                 );
               })
             ) : (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 {initialFilters.gender
                   ? "No categories available for this gender"
                   : "Select a gender first"}
@@ -365,7 +365,7 @@ export default function FilterBar({
                       <Button
                         onClick={() => toggleFilterValue("color", colorValue)}
                         className={clsx(
-                          "size-6 rounded-full p-0 border",
+                          "size-6 rounded-full p-0 border border-input",
                           isSelected ? "ring-1 ring-offset-2 ring-primary" : ""
                         )}
                         style={{ backgroundColor: color.colorCode }}

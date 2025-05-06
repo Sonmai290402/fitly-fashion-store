@@ -13,13 +13,16 @@ interface SwiperPaginationProps {
 const SwiperPagination = ({
   totalSlides,
   shouldShow = true,
-  activeColor = "bg-primary",
-  inactiveColor = "bg-gray-300",
+  activeColor,
+  inactiveColor,
   className,
 }: SwiperPaginationProps) => {
   const swiper = useSwiper();
   const [activeIndex, setActiveIndex] = useState(0);
   const [slidesCount, setSlidesCount] = useState(totalSlides || 0);
+
+  const defaultActiveColor = "bg-primary dark:bg-primary";
+  const defaultInactiveColor = "bg-gray-300 dark:bg-gray-600";
 
   useEffect(() => {
     if (!swiper) return;
@@ -76,7 +79,9 @@ const SwiperPagination = ({
           className={clsx(
             "transition-all duration-300 rounded-full focus:outline-none",
             "size-2",
-            activeIndex === index ? activeColor : inactiveColor,
+            activeIndex === index
+              ? activeColor || defaultActiveColor
+              : inactiveColor || defaultInactiveColor,
             activeIndex === index ? "scale-110" : "hover:scale-110"
           )}
           aria-label={`Go to slide ${index + 1}`}

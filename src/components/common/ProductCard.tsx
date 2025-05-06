@@ -116,10 +116,13 @@ const ProductCard = ({
   return (
     <div
       className={twMerge(
-        clsx("group relative flex flex-col gap-1 w-full h-full", className)
+        clsx(
+          "group relative flex flex-col gap-1 w-full h-full bg-card shadow-md rounded-lg",
+          className
+        )
       )}
     >
-      <div className="aspect-[3/4] relative overflow-hidden rounded-lg bg-gray-100">
+      <div className="aspect-[3/4] relative overflow-hidden rounded-lg">
         {product.price > 0 &&
           product.sale_price > 0 &&
           discountPercentage > 0 && (
@@ -131,7 +134,7 @@ const ProductCard = ({
         <Link href={productUrl} className="block w-full h-full">
           {imageLoading && !imageError && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader className="size-6 animate-spin text-gray-400" />
+              <Loader className="size-6 animate-spin text-gray-400 dark:text-gray-500" />
             </div>
           )}
 
@@ -153,14 +156,14 @@ const ProductCard = ({
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm italic">
+            <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500 text-sm italic">
               No Image Available
             </div>
           )}
         </Link>
       </div>
 
-      <div className="flex flex-col flex-1 gap-1">
+      <div className="flex flex-col flex-1 gap-1 px-2">
         {colors.length > 0 && (
           <div className="flex items-center flex-wrap gap-2">
             {colors.map((color, index) => (
@@ -174,9 +177,9 @@ const ProductCard = ({
                         setSelectedSizeIndex(-1);
                       }}
                       className={clsx(
-                        "size-5 rounded-full border transition-all",
+                        "size-5 rounded-full border transition-all dark:border-gray-700",
                         index === selectedColorIndex
-                          ? "ring-1 ring-black scale-105"
+                          ? "ring-1 ring-black dark:ring-white scale-105"
                           : "hover:scale-105"
                       )}
                       style={{ backgroundColor: color.colorCode }}
@@ -203,8 +206,8 @@ const ProductCard = ({
                 className={clsx(
                   "px-2 py-0.5 rounded-md border text-xs h-fit transition-colors",
                   index === selectedSizeIndex
-                    ? "bg-gray-800 text-white border-gray-800"
-                    : "bg-gray-50 hover:bg-gray-100"
+                    ? "bg-gray-800 text-white border-gray-800 dark:bg-white dark:text-gray-900 dark:border-white"
+                    : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700 dark:text-gray-200"
                 )}
                 aria-label={`Size ${size.name}`}
               >
@@ -215,24 +218,24 @@ const ProductCard = ({
         )}
 
         <Link href={productUrl} className="flex h-12 mt-auto">
-          <h3 className="text-md font-semibold text-gray-800 line-clamp-2">
+          <h3 className="text-md font-semibold text-gray-800 dark:text-gray-100 line-clamp-2">
             {product.title}
           </h3>
         </Link>
       </div>
 
-      <div className="mt-auto">
+      <div className="mt-auto px-2">
         {product.sale_price ? (
           <div className="flex items-center gap-2 mt-auto">
-            <span className="font-bold text-md">
+            <span className="font-bold text-md dark:text-white">
               {formatCurrency(product.sale_price)}
             </span>
-            <span className="line-through text-gray-500 text-sm">
+            <span className="line-through text-gray-500 dark:text-gray-400 text-sm">
               {formatCurrency(product.price)}
             </span>
           </div>
         ) : (
-          <span className="font-bold text-md">
+          <span className="font-bold text-md dark:text-white">
             {product.price ? formatCurrency(product.price) : "0.00"}
           </span>
         )}
@@ -240,23 +243,25 @@ const ProductCard = ({
 
       {showQuantity && (
         <div className="flex items-center gap-2 mt-2 mb-1">
-          <div className="flex items-center border rounded">
+          <div className="flex items-center border rounded dark:border-gray-700">
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="h-8 px-2 rounded-none"
+              className="h-8 px-2 rounded-none dark:hover:bg-gray-800 dark:text-gray-300"
               onClick={() => handleQuantityChange(-1)}
               disabled={quantity <= 1 || addingToCart}
             >
               <Minus className="h-3 w-3" />
             </Button>
-            <span className="w-8 text-center">{quantity}</span>
+            <span className="w-8 text-center dark:text-gray-300">
+              {quantity}
+            </span>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="h-8 px-2 rounded-none"
+              className="h-8 px-2 rounded-none dark:hover:bg-gray-800 dark:text-gray-300"
               onClick={() => handleQuantityChange(1)}
               disabled={addingToCart}
             >

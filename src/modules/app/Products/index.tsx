@@ -12,6 +12,16 @@ import FilterBar from "./components/FilterBar";
 import MobileFilterSidebar from "./components/MobileFilterSidebar";
 import ProductGrid from "./components/ProductGrid";
 
+// Separate the mobile filter sidebar to prevent it from causing re-renders
+const MobileFilters = React.memo(({ filters }: { filters: ProductFilters }) => {
+  return <MobileFilterSidebar filters={filters} />;
+});
+
+MobileFilters.displayName = "MobileFilters";
+
+// Ensure ProductGrid doesn't re-render unnecessarily
+const MemoizedProductGrid = React.memo(ProductGrid);
+
 const Products = () => {
   const searchParams = useSearchParams();
   const { genders } = useGenderStore();
@@ -47,13 +57,20 @@ const Products = () => {
     ? `${selectedGender.title}'s Products`
     : "All Products";
 
+  // Memoize the title to prevent re-renders
+  const PageTitle = React.memo(() => (
+    <h2 className="text-2xl font-bold text-foreground">{pageTitle}</h2>
+  ));
+
+  PageTitle.displayName = "PageTitle";
+
   return (
     <div className="flex flex-col max-w-7xl px-5 py-5 sm:mx-10 md:mx-15 lg:mx-20 gap-y-5">
       <Breadcrumb filters={filters} />
 
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">{pageTitle}</h2>
-        <MobileFilterSidebar filters={filters} />
+        <PageTitle />
+        <MobileFilters filters={filters} />
       </div>
 
       <div className="flex gap-5">
@@ -63,7 +80,7 @@ const Products = () => {
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <ProductGrid filters={filters} />
+          <MemoizedProductGrid filters={filters} />
         </div>
       </div>
     </div>

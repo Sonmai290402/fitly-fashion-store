@@ -12,7 +12,7 @@ interface FeaturedReviewCardProps {
 
 export function FeaturedReviewCard({ review }: FeaturedReviewCardProps) {
   return (
-    <div className="flex flex-col md:flex-row bg-white rounded-xl shadow-lg">
+    <div className="flex flex-col md:flex-row bg-white dark:bg-card rounded-xl shadow-lg dark:shadow-lg dark:shadow-black/20">
       <Link
         href={`/product/${review.productId}`}
         className="w-full md:w-1/2 p-6 flex flex-col"
@@ -27,7 +27,7 @@ export function FeaturedReviewCard({ review }: FeaturedReviewCardProps) {
         </div>
 
         <div className="mt-auto flex flex-col items-center">
-          <h3 className="text-xl font-bold line-clamp-2 mb-2">
+          <h3 className="text-xl font-bold line-clamp-2 mb-2 dark:text-white">
             {review.product?.title || "Product Name"}
           </h3>
         </div>
@@ -51,29 +51,33 @@ export function FeaturedReviewCard({ review }: FeaturedReviewCardProps) {
                 <span
                   key={index}
                   className={`${
-                    index < review.rating ? "text-yellow-400" : "text-gray-300"
+                    index < review.rating
+                      ? "text-yellow-400"
+                      : "text-gray-300 dark:text-gray-600"
                   }`}
                 >
                   <Star fill="currentColor" className="h-4 w-4" />
                 </span>
               ))}
             </div>
-            <div className="font-bold">{review.user?.username || "User"}</div>
-            <div className="text-sm text-gray-500">
+            <div className="font-bold dark:text-white">
+              {review.user?.username || "User"}
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               {formatTimestamp(review.createdAt)}
             </div>
           </div>
         </div>
 
         {review.title && (
-          <h4 className="text-xl font-semibold mb-3">
+          <h4 className="text-xl font-semibold mb-3 dark:text-white">
             &quot;{review.title}&quot;
           </h4>
         )}
 
-        <div className="prose max-w-none mb-6">
-          <Quote size={20} />
-          <p className="line-clamp-4 md:line-clamp-6 text-gray-700">
+        <div className="prose max-w-none mb-6 dark:prose-invert">
+          <Quote size={20} className="dark:text-gray-400" />
+          <p className="line-clamp-4 md:line-clamp-6 text-gray-700 dark:text-gray-300">
             {review.comment}
           </p>
         </div>
