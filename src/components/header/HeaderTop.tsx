@@ -10,7 +10,6 @@ const HeaderTop = () => {
   const hasHydrated = useHasHydrated();
   const pathname = usePathname();
 
-  // Generate signup URL with return_to parameter
   const signupUrl =
     pathname && pathname !== "/login" && pathname !== "/signup"
       ? `/signup?return_to=${encodeURIComponent(pathname)}`

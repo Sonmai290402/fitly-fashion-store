@@ -1,4 +1,5 @@
-import { Copyright } from "lucide-react";
+import { Copyright, Github } from "lucide-react";
+import Link from "next/link";
 
 import { footerItems, footerTerms } from "@/constants";
 
@@ -46,7 +47,17 @@ const Footer = () => {
       </div>
 
       <p className="flex gap-1 items-center font-extralight text-xs sm:text-sm mt-2 dark:text-muted-foreground">
-        <Copyright size={14} /> 2025 All Rights Reserved
+        <Copyright size={14} /> 2025 FITLY. Developed by Sonmai
+      </p>
+      <p className="flex gap-1 items-center font-extralight text-xs sm:text-sm mt-2 dark:text-muted-foreground">
+        Contacct me via{" "}
+        <Link
+          href="https://github.com/sonmai290402"
+          target="_blank"
+          className="flex gap-1 items-center hover:underline font-bold"
+        >
+          <Github size={14} /> Sonmai290402
+        </Link>
       </p>
     </footer>
   );

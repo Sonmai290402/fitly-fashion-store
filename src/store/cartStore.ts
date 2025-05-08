@@ -2,6 +2,11 @@ import { useEffect } from "react";
 import { create } from "zustand";
 
 import { STORAGE_KEYS } from "@/constants";
+import {
+  deleteCartFromFirestore,
+  loadCartFromFirestore,
+  saveCartToFirestore,
+} from "@/services/cartService";
 import { createOrder } from "@/services/orderService";
 import { CartItem } from "@/types/cart.types";
 import { AddressData } from "@/types/order.types";
@@ -31,6 +36,7 @@ interface CartState {
   ) => Promise<string>;
   loadCart: (userId: string | null) => void;
   saveCart: (userId: string | null) => void;
+  syncCartAcrossDevices: (userId: string) => Promise<void>;
 }
 
 export const useCartStore = create<CartState>((set, get) => ({
@@ -131,7 +137,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   clearCart: () => {
     set({ items: [] });
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const { saveCart } = get();
       let userId: string | null = null;
       try {
@@ -139,6 +145,11 @@ export const useCartStore = create<CartState>((set, get) => ({
         if (userData) {
           const user = JSON.parse(userData);
           userId = user.uid;
+
+          // Also delete from Firestore if user is logged in
+          if (userId) {
+            await deleteCartFromFirestore(userId);
+          }
         }
       } catch (e) {
         console.error("Error getting user ID when clearing cart:", e);
@@ -186,68 +197,152 @@ export const useCartStore = create<CartState>((set, get) => ({
     return orderId;
   },
 
-  loadCart: (userId: string | null) => {
+  loadCart: async (userId: string | null) => {
     set({ loading: true });
 
-    const userStorageKey = getUserCartKey(userId);
-    const guestStorageKey = STORAGE_KEYS.CART_ITEMS_GUEST;
-
     try {
-      const userCart = JSON.parse(localStorage.getItem(userStorageKey) || "{}");
-      const guestCart = JSON.parse(
-        localStorage.getItem(guestStorageKey) || "{}"
-      );
+      let items: CartItem[] = [];
 
-      const items: CartItem[] = Array.isArray(userCart.items)
-        ? userCart.items
-        : [];
+      if (userId) {
+        try {
+          items = await loadCartFromFirestore(userId);
 
-      if (userId && Array.isArray(guestCart.items)) {
-        for (const guestItem of guestCart.items) {
-          const index = items.findIndex(
-            (item) =>
-              item.id === guestItem.id &&
-              item.color === guestItem.color &&
-              item.size === guestItem.size
+          if (items.length === 0) {
+            const localCart = JSON.parse(
+              localStorage.getItem(getUserCartKey(userId)) || "{}"
+            );
+
+            if (Array.isArray(localCart.items) && localCart.items.length > 0) {
+              items = localCart.items;
+
+              saveCartToFirestore(userId, items).catch((err) =>
+                console.error(
+                  "Error syncing localStorage cart to Firestore:",
+                  err
+                )
+              );
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load cart from Firestore:", error);
+
+          const localCart = JSON.parse(
+            localStorage.getItem(getUserCartKey(userId)) || "{}"
           );
 
-          if (index !== -1) {
-            items[index].quantity += guestItem.quantity;
-          } else {
-            items.push(guestItem);
+          if (Array.isArray(localCart.items)) {
+            items = localCart.items;
           }
         }
 
-        localStorage.removeItem(guestStorageKey);
+        const guestCart = JSON.parse(
+          localStorage.getItem(STORAGE_KEYS.CART_ITEMS_GUEST) || "{}"
+        );
+
+        if (Array.isArray(guestCart.items) && guestCart.items.length > 0) {
+          for (const guestItem of guestCart.items) {
+            const index = items.findIndex(
+              (item) =>
+                item.id === guestItem.id &&
+                item.color === guestItem.color &&
+                item.size === guestItem.size
+            );
+
+            if (index !== -1) {
+              items[index].quantity += guestItem.quantity;
+            } else {
+              items.push(guestItem);
+            }
+          }
+
+          localStorage.removeItem(STORAGE_KEYS.CART_ITEMS_GUEST);
+
+          if (items.length > 0) {
+            saveCartToFirestore(userId, items).catch((err) =>
+              console.error("Error saving merged cart to Firestore:", err)
+            );
+          }
+        }
+      } else {
+        const guestCart = JSON.parse(
+          localStorage.getItem(STORAGE_KEYS.CART_ITEMS_GUEST) || "{}"
+        );
+
+        if (Array.isArray(guestCart.items)) {
+          items = guestCart.items;
+        }
       }
 
       set({ items, loading: false });
-      localStorage.setItem(userStorageKey, JSON.stringify({ items }));
+
+      const storageKey = getUserCartKey(userId);
+      localStorage.setItem(storageKey, JSON.stringify({ items }));
     } catch (error) {
       console.error("Failed to load cart:", error);
       set({ items: [], loading: false });
     }
   },
 
-  saveCart: (userId: string | null) => {
+  saveCart: async (userId: string | null) => {
     const { items } = get();
     const storageKey = getUserCartKey(userId);
 
     try {
       localStorage.setItem(storageKey, JSON.stringify({ items }));
+
+      if (userId && items.length > 0) {
+        await saveCartToFirestore(userId, items);
+      }
     } catch (error) {
       console.error("Failed to save cart:", error);
+    }
+  },
+
+  syncCartAcrossDevices: async (userId: string) => {
+    if (!userId) return;
+
+    try {
+      set({ loading: true });
+
+      const firestoreItems = await loadCartFromFirestore(userId);
+
+      const localStorageKey = getUserCartKey(userId);
+      const localCart = JSON.parse(
+        localStorage.getItem(localStorageKey) || "{}"
+      );
+      const localItems = Array.isArray(localCart.items) ? localCart.items : [];
+
+      let mergedItems = firestoreItems;
+
+      if (firestoreItems.length === 0 && localItems.length > 0) {
+        mergedItems = localItems;
+
+        await saveCartToFirestore(userId, localItems);
+      }
+
+      set({ items: mergedItems, loading: false });
+      localStorage.setItem(
+        localStorageKey,
+        JSON.stringify({ items: mergedItems })
+      );
+    } catch (error) {
+      console.error("Failed to sync cart across devices:", error);
+      set({ loading: false });
     }
   },
 }));
 
 export const useCartUserSync = () => {
   const { user } = useAuthStore();
-  const { loadCart } = useCartStore();
+  const { loadCart, syncCartAcrossDevices } = useCartStore();
 
   useEffect(() => {
-    loadCart(user?.uid || null);
-  }, [user?.uid, loadCart]);
+    if (user?.uid) {
+      syncCartAcrossDevices(user.uid);
+    } else {
+      loadCart(null);
+    }
+  }, [user?.uid, loadCart, syncCartAcrossDevices]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -257,7 +352,7 @@ export const useCartUserSync = () => {
         try {
           if (e.newValue) {
             const userData = JSON.parse(e.newValue);
-            loadCart(userData.uid);
+            syncCartAcrossDevices(userData.uid);
           } else {
             loadCart(null);
           }
@@ -270,5 +365,5 @@ export const useCartUserSync = () => {
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [loadCart]);
+  }, [loadCart, syncCartAcrossDevices]);
 };
