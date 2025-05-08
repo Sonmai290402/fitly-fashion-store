@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -43,6 +43,17 @@ const formSchema = z
 const SignUpForm = () => {
   const { signup, loading } = useAuthStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [returnPath, setReturnPath] = useState<string | null>(null);
+
+  // Get return_to from URL query parameters
+  useEffect(() => {
+    const returnTo = searchParams.get("return_to");
+    if (returnTo) {
+      setReturnPath(returnTo);
+    }
+  }, [searchParams]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -61,7 +72,12 @@ const SignUpForm = () => {
         password: values.password,
       });
       if (success) {
-        router.push("/");
+        // Redirect to the return path if it exists, otherwise go to home
+        if (returnPath) {
+          router.push(returnPath);
+        } else {
+          router.push("/");
+        }
       }
     } catch (error) {
       console.error(error);
@@ -153,7 +169,14 @@ const SignUpForm = () => {
         </Button>
         <p>
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold hover:text-black/60">
+          <Link
+            href={
+              returnPath
+                ? `/login?return_to=${encodeURIComponent(returnPath)}`
+                : "/login"
+            }
+            className="font-semibold hover:text-black/60"
+          >
             Login
           </Link>
         </p>
