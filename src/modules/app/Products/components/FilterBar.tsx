@@ -92,7 +92,6 @@ export default function FilterBar({
   }, [selectedGenderId, fetchCategories]);
 
   useEffect(() => {
-    // Only validate and potentially remove the category filter after categories are loaded
     if (
       categoriesLoaded &&
       initialFilters.gender &&
@@ -217,7 +216,6 @@ export default function FilterBar({
   }, []);
 
   const clearAllFilters = useCallback(() => {
-    // Create new params with only the sort parameter preserved (if it exists)
     const params = new URLSearchParams();
     if (searchParams.has("sort")) {
       params.set("sort", searchParams.get("sort")!);
@@ -441,7 +439,6 @@ export default function FilterBar({
           <h3 className="text-sm font-medium mb-2">Active Filters:</h3>
           <div className="flex flex-wrap gap-2">
             {Object.entries(initialFilters).map(([key, value]) => {
-              // Skip sort from appearing in active filters
               if (key === "sort") return null;
 
               let label = "";

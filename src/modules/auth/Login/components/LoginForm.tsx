@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -29,6 +29,15 @@ const formSchema = z.object({
 const LoginForm = () => {
   const { login, loading } = useAuthStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [returnPath, setReturnPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    const returnTo = searchParams.get("return_to");
+    if (returnTo) {
+      setReturnPath(returnTo);
+    }
+  }, [searchParams]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -45,7 +54,11 @@ const LoginForm = () => {
     });
 
     if (success) {
-      router.push("/");
+      if (returnPath) {
+        router.push(returnPath);
+      } else {
+        router.push("/");
+      }
     }
   };
   return (

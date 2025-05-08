@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { LogOut, Package, Search, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useMediaQuery } from "usehooks-ts";
 
 import { headerActionItems } from "@/constants";
@@ -25,6 +26,8 @@ import HeaderSearch from "./HeaderSearch";
 const HeaderActions = () => {
   const { logout, user } = useAuthStore();
   const { isSearchOpen, toggleSearch } = useSearchStore();
+  const pathname = usePathname();
+
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const isMobile = useMediaQuery("(max-width: 768px)");
   const hasHydrated = useHasHydrated();
@@ -48,11 +51,14 @@ const HeaderActions = () => {
 
   if (!hasHydrated) return <div className="flex flex-1"></div>;
 
-  // The only change is here - making the button toggle the search directly
-  // No need to go through HeaderSearch component for toggling
   const handleSearchToggle = () => {
     toggleSearch();
   };
+
+  const loginUrl =
+    pathname && pathname !== "/login" && pathname !== "/signup"
+      ? `/login?return_to=${encodeURIComponent(pathname)}`
+      : "/login";
 
   return (
     <nav className="flex flex-1 justify-end items-center gap-1 md:gap-3">
@@ -123,10 +129,8 @@ const HeaderActions = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-        <Link href="/login">
-          <Button className="px-4 py-2 rounded-md font-medium">
-            Login
-          </Button>
+        <Link href={loginUrl}>
+          <Button className="px-4 py-2 rounded-md font-medium">Login</Button>
         </Link>
       )}
     </nav>

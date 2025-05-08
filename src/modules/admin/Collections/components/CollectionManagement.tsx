@@ -62,7 +62,6 @@ export default function CollectionManagement() {
     })
     .filter((id): id is string => id !== null);
 
-  // Define columns
   const selectionColumn = createSelectionColumn<CollectionData>();
 
   const columns: ColumnDef<CollectionData>[] = [
@@ -155,7 +154,6 @@ export default function CollectionManagement() {
     }
   };
 
-  // Actions column
   const actionsColumn = createActionsColumn<CollectionData>((collection) => [
     <DropdownMenuItem
       key="edit"

@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -9,6 +8,7 @@ import { useCollectionStore } from "@/store/collectionStore";
 import { ProductData } from "@/types/product.types";
 
 import CollectionGrid from "./CollectionGrid";
+import CollectionSkeleton from "./CollectionSkeleton";
 
 const CollectionDetail = () => {
   const { slug } = useParams();
@@ -48,14 +48,7 @@ const CollectionDetail = () => {
   }, [slug, getCollectionBySlug, getProductsByCollection]);
 
   if (loading || productsLoading) {
-    return (
-      <div className="container py-20 flex justify-center">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="mt-4 text-gray-600">Loading collection...</p>
-        </div>
-      </div>
-    );
+    return <CollectionSkeleton />;
   }
 
   if (error) {

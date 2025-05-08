@@ -40,7 +40,6 @@ export default function CategoryManagement() {
     bulkDeleteCategories,
   } = useCategoryStore();
 
-  // States for modals and selection
   const [rowSelection, setRowSelection] = useState({});
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryData | null>(
@@ -62,7 +61,6 @@ export default function CategoryManagement() {
     fetchGenders();
   }, [fetchCategories, fetchGenders]);
 
-  // Define columns
   const selectionColumn = createSelectionColumn<CategoryData>();
 
   const columns: ColumnDef<CategoryData>[] = [

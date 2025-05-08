@@ -19,12 +19,9 @@ type Props = {
   filters: ProductFilters;
 };
 
-// Using memo to prevent re-renders when parent components update
 const MobileFilterSidebar = memo(({ filters }: Props) => {
-  // Use local state to control Sheet open/close state
   const [open, setOpen] = useState(false);
 
-  // Function to close the filter sheet without causing parent re-renders
   const handleClose = () => {
     setOpen(false);
   };
@@ -60,7 +57,6 @@ const MobileFilterSidebar = memo(({ filters }: Props) => {
   );
 });
 
-// Add display name for React DevTools
 MobileFilterSidebar.displayName = "MobileFilterSidebar";
 
 export default MobileFilterSidebar;

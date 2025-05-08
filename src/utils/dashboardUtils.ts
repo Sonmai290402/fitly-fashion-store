@@ -27,19 +27,16 @@ export function getPeriodStart(date: Date, period: string): Date {
   return result;
 }
 
-// Calculate total revenue from orders
 export function calculateTotalRevenue(orders: OrderData[]): number {
   return orders.reduce((total, order) => total + (order.total || 0), 0);
 }
 
-// Calculate average order value
 export function calculateAOV(orders: OrderData[]): number {
   if (orders.length === 0) return 0;
   const total = calculateTotalRevenue(orders);
   return total / orders.length;
 }
 
-// Get order count by status
 export function getOrdersByStatus(orders: OrderData[]): Record<string, number> {
   const statusCount: Record<string, number> = {
     pending: 0,
@@ -58,7 +55,6 @@ export function getOrdersByStatus(orders: OrderData[]): Record<string, number> {
   return statusCount;
 }
 
-// Get revenue data for chart
 export function getRevenueData(
   orders: OrderData[],
   days: number = 7
@@ -66,7 +62,6 @@ export function getRevenueData(
   const today = new Date();
   const data: RevenueDataPoint[] = [];
 
-  // Create dates for the last X days
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date();
     date.setDate(today.getDate() - i);
@@ -81,7 +76,7 @@ export function getRevenueData(
       ) {
         orderDate = new Date(order.createdAt);
       }
-      // Ignore orders where createdAt is not a valid date string or Date object
+
       return orderDate && orderDate.toISOString().split("T")[0] === dayStr;
     });
 
@@ -100,7 +95,6 @@ export function getRevenueData(
   return data;
 }
 
-// Get low stock products
 export function getLowStockProducts(
   products: ProductData[],
   threshold: number = 10
@@ -110,7 +104,6 @@ export function getLowStockProducts(
     .sort((a, b) => (a.totalStock || 0) - (b.totalStock || 0));
 }
 
-// Get top selling products
 export function getTopProducts(
   orders: OrderData[],
   products: ProductData[],
@@ -121,7 +114,6 @@ export function getTopProducts(
     { id: string; quantity: number; revenue: number }
   > = {};
 
-  // Count sales for each product
   orders.forEach((order) => {
     if (!order.items) return;
 
@@ -139,7 +131,6 @@ export function getTopProducts(
     });
   });
 
-  // Find product details and sort by quantity
   return Object.values(productSales)
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, limit)
@@ -157,19 +148,16 @@ export function getTopProducts(
     });
 }
 
-// Get sales by category
 export function getSalesByCategory(
   orders: OrderData[],
   products: ProductData[]
 ): CategoryDataPoint[] {
   const categorySales: Record<string, number> = {};
 
-  // Group all ordered products by category
   orders.forEach((order) => {
     if (!order.items) return;
 
     order.items.forEach((item) => {
-      // Find the product info
       const product = products.find((p) => p.id === item.productId);
       if (product) {
         const category = product.category || "Uncategorized";
@@ -181,7 +169,6 @@ export function getSalesByCategory(
     });
   });
 
-  // Convert to array format for chart
   return Object.entries(categorySales)
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);

@@ -40,7 +40,6 @@ export default function SearchResults({ onItemClick }: SearchResultsProps) {
     );
   }
 
-  // Empty search query but with recent searches
   if (!searchQuery && recentSearches.length > 0) {
     return (
       <div className="p-4">
@@ -74,7 +73,6 @@ export default function SearchResults({ onItemClick }: SearchResultsProps) {
     );
   }
 
-  // Empty search query with no recent searches
   if (!searchQuery) {
     return (
       <div className="text-center py-6">
@@ -84,7 +82,6 @@ export default function SearchResults({ onItemClick }: SearchResultsProps) {
     );
   }
 
-  // Has search query but no results
   if (searchResults.length === 0) {
     return (
       <div className="py-10 text-center p-4">
@@ -100,7 +97,6 @@ export default function SearchResults({ onItemClick }: SearchResultsProps) {
     );
   }
 
-  // Has search query with results
   return (
     <div className="p-4">
       <div className="space-y-4">

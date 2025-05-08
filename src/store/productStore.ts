@@ -29,32 +29,26 @@ import {
 import { handleFirebaseError } from "@/utils/configFirebaseError";
 
 type ProductState = {
-  // Main product arrays
   products: Array<ProductData & { id?: string }>;
   productsToDisplay: Array<ProductData & { id?: string }>;
   allPageProducts: Array<ProductData & { id?: string }>;
 
-  // Loading and error states
   loading: boolean;
   isLazyLoading: boolean;
   error: string | null;
 
-  // Pagination states
   pagination: PaginationState;
   hasMore: boolean;
   lastDocument: QueryDocumentSnapshot<DocumentData> | null;
 
-  // Pagination actions
   setPagination: (pagination: Partial<PaginationState>) => void;
   resetPagination: () => void;
   setCurrentPage: (page: number) => void;
 
-  // Lazy loading actions
   setLazyLoading: (loading: boolean) => void;
   loadMoreProducts: () => void;
   resetLazyLoading: () => void;
 
-  // Product CRUD operations
   createProduct: (productData: ProductData) => Promise<string | boolean>;
   fetchProducts: (
     filters?: ProductFilters,
@@ -82,7 +76,6 @@ const initialPaginationState: PaginationState = {
 };
 
 export const useProductStore = create<ProductState>((set, get) => ({
-  // Initial state
   products: [],
   productsToDisplay: [],
   allPageProducts: [],
@@ -93,7 +86,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
   hasMore: true,
   lastDocument: null,
 
-  // Pagination state management
   setPagination: (pagination) => {
     set((state) => ({
       pagination: { ...state.pagination, ...pagination },
@@ -117,23 +109,20 @@ export const useProductStore = create<ProductState>((set, get) => ({
         page,
       },
     }));
-    // Reset lazy loading when changing page
+
     get().resetLazyLoading();
   },
 
-  // Lazy loading state management
   setLazyLoading: (loading) => {
     set({ isLazyLoading: loading });
   },
 
   loadMoreProducts: () => {
     set((state) => {
-      // If we're already showing all products for this page, do nothing
       if (state.productsToDisplay.length >= state.allPageProducts.length) {
         return state;
       }
 
-      // Get the next batch of products (load 4 more products)
       const nextBatch = state.allPageProducts.slice(
         state.productsToDisplay.length,
         state.productsToDisplay.length + 4
@@ -154,7 +143,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
     });
   },
 
-  // Create a new product
   createProduct: async (productData: ProductData) => {
     set({ loading: true, error: null });
     try {
@@ -192,7 +180,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
       };
 
       set((state) => {
-        // Calculate new pagination
         const newTotalItems = state.pagination.totalItems + 1;
         const newTotalPages = Math.ceil(
           newTotalItems / state.pagination.pageSize
@@ -271,11 +258,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
       const snapshot = await getDocs(paginatedQuery);
 
-      // Process results
       let products = snapshot.docs.map((doc) => {
         const data = doc.data() as ProductData;
 
-        // Calculate the effective price for each product (use sale_price if it exists and is > 0)
         const effectivePrice =
           data.sale_price && data.sale_price > 0
             ? data.sale_price
@@ -289,7 +274,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
         };
       }) as (ProductData & { id: string; effectivePrice: number })[];
 
-      // Apply client-side filters
       if (filters.color) {
         products = products.filter((product) =>
           product.colors?.some(
@@ -308,7 +292,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
         );
       }
 
-      // Apply client-side sorting for price
       if (filters.sort) {
         switch (filters.sort) {
           case "price-asc":
@@ -321,7 +304,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
               (a, b) => b.effectivePrice - a.effectivePrice
             );
             break;
-          // newest sorting already handled in the Firestore query
         }
       }
 
@@ -386,7 +368,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
       const allProducts = allDocsSnapshot.docs.map((doc) => {
         const data = doc.data() as ProductData;
 
-        // Calculate the effective price for each product (use sale_price if it exists and is > 0)
         const effectivePrice =
           data.sale_price && data.sale_price > 0
             ? data.sale_price
@@ -420,7 +401,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
         );
       }
 
-      // Apply client-side sorting for price
       if (filters.sort) {
         switch (filters.sort) {
           case "price-asc":
@@ -538,7 +518,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
         );
       }
 
-      // Apply client-side sorting for price
       if (filters.sort) {
         switch (filters.sort) {
           case "price-asc":
@@ -551,22 +530,19 @@ export const useProductStore = create<ProductState>((set, get) => ({
               (a, b) => b.effectivePrice - a.effectivePrice
             );
             break;
-          // newest sorting already handled in the Firestore query
         }
       }
 
-      // Check if there are more products to load
       const hasMoreProducts = snapshot.docs.length === pageSize;
       const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
 
-      // Update the store
       set((state) => ({
         products: [...state.products, ...newProducts],
         allPageProducts: [...state.allPageProducts, ...newProducts],
         productsToDisplay: [
           ...state.productsToDisplay,
           ...newProducts.slice(0, 4),
-        ], // Add initial batch of new products
+        ],
         loading: false,
         lastDocument: lastDoc,
         hasMore: hasMoreProducts,
@@ -584,7 +560,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
   },
 
-  // Fetch a single product by ID
   fetchProductById: async (id: string) => {
     set({ loading: true, error: null });
     try {
@@ -613,7 +588,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
   },
 
-  // Delete a product
   deleteProduct: async (productId: string) => {
     set({ loading: true, error: null });
     try {
@@ -631,7 +605,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
           (p) => p.id !== productId
         );
 
-        // Update pagination
         const totalItems = updatedProducts.length;
         const totalPages = Math.max(
           1,
@@ -661,7 +634,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
   },
 
-  // Update a product
   updateProduct: async (productId: string, productData: ProductData) => {
     set({ loading: true, error: null });
     try {
@@ -703,7 +675,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
   },
 
-  // Bulk delete products
   bulkDeleteProducts: async (productIds: string[]) => {
     set({ loading: true, error: null });
 
@@ -726,7 +697,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
           (product) => !productIds.includes(product.id as string)
         );
 
-        // Update pagination
         const totalItems = updatedProducts.length;
         const totalPages = Math.max(
           1,

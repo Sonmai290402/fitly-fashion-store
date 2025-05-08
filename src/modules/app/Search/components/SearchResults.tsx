@@ -16,7 +16,6 @@ export default function SearchPage() {
   const searchQuery = searchParams.get("q") || "";
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
-  // For controlled display of products with smooth loading
   const [visibleProducts, setVisibleProducts] = useState<ProductData[]>([]);
 
   const {
@@ -31,15 +30,12 @@ export default function SearchPage() {
     clearFilters,
   } = useSearchStore();
 
-  // For infinite scroll
   const { ref, inView } = useScrollView(0.5, false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Initial search when page loads
   useEffect(() => {
     if (!searchQuery) return;
 
-    // Clear any previous search results/filters
     clearFilters();
 
     const runSearch = async () => {
@@ -50,12 +46,10 @@ export default function SearchPage() {
     runSearch();
   }, [searchQuery, performPageSearch, clearFilters]);
 
-  // Update visible products when search results change
   useEffect(() => {
     setVisibleProducts(searchResults);
   }, [searchResults]);
 
-  // Handle infinite scroll
   useEffect(() => {
     if (inView && hasMore && !loading && !isLoadingMore && lastVisibleDoc) {
       const loadMore = async () => {
@@ -75,7 +69,6 @@ export default function SearchPage() {
     loadMoreResults,
   ]);
 
-  // No query provided
   if (!searchQuery) {
     return (
       <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center min-h-[50vh]">
@@ -90,7 +83,6 @@ export default function SearchPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Breadcrumb */}
       <div className="flex items-center text-sm mb-6">
         <Link
           href="/"
@@ -114,7 +106,6 @@ export default function SearchPage() {
         )}
       </div>
 
-      {/* Loading state */}
       {loading && isFirstLoad ? (
         <ProductSkeletonGrid />
       ) : error ? (
@@ -157,7 +148,6 @@ export default function SearchPage() {
             ))}
           </div>
 
-          {/* Infinite scroll loading indicator */}
           {(hasMore || isLoadingMore) && (
             <div ref={ref} className="flex justify-center py-4">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />

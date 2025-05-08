@@ -26,7 +26,6 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
   const { isSearchOpen, setSearchOpen, setSearchQuery, clearSearch, loading } =
     useSearchStore();
 
-  // Focus input when search is opened
   useEffect(() => {
     if (isSearchOpen && inputRef.current) {
       setTimeout(() => {
@@ -35,14 +34,12 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
     }
   }, [isSearchOpen]);
 
-  // Handle clicks outside the search component
   useOnClickOutside(searchRef as RefObject<HTMLElement>, () => {
     if (isSearchOpen && !isMobile) {
       setSearchOpen(false);
     }
   });
 
-  // Clear search when closed
   useEffect(() => {
     if (!isSearchOpen) {
       setQuery("");
@@ -50,7 +47,6 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
     }
   }, [isSearchOpen, clearSearch]);
 
-  // Update search with debounced query
   useEffect(() => {
     if (debouncedQuery) {
       setSearchQuery(debouncedQuery);
@@ -76,7 +72,6 @@ export default function HeaderSearch({ isMobile }: HeaderSearchProps) {
     setSearchOpen(false);
   };
 
-  // Mobile search experience
   if (isMobile) {
     return (
       <AnimatePresence>

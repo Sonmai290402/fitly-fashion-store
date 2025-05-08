@@ -155,7 +155,6 @@ export const useSearchStore = create<SearchState>((set, get) => {
           }
         });
 
-        // Save to recent searches if we found results
         if (results.length > 0) {
           get().addToRecentSearches(searchQuery);
         }
@@ -319,9 +318,8 @@ export const useSearchStore = create<SearchState>((set, get) => {
     },
 
     setCategory: (category: string) => {
-      // Use empty string internally to represent "all categories"
       set({ selectedCategory: category });
-      // Re-run search with new category
+
       const { searchQuery } = get();
       if (searchQuery) {
         get().performPageSearch(searchQuery);
@@ -329,9 +327,8 @@ export const useSearchStore = create<SearchState>((set, get) => {
     },
 
     setGender: (gender: string) => {
-      // Use empty string internally to represent "all genders"
       set({ selectedGender: gender });
-      // Re-run search with new gender
+
       const { searchQuery } = get();
       if (searchQuery) {
         get().performPageSearch(searchQuery);
@@ -364,7 +361,6 @@ export const useSearchStore = create<SearchState>((set, get) => {
           if (data.title) categories.push(data.title);
         });
 
-        // Get genders
         const genderQuery = query(collection(fireDB, "genders"), limit(10));
         const genderSnapshot = await getDocs(genderQuery);
         const genders: string[] = [];

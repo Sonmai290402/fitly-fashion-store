@@ -52,10 +52,8 @@ export default function ProductList() {
     fetchProducts();
   }, [fetchProducts]);
 
-  // Selection column with checkbox
   const selectionColumn = createSelectionColumn<ProductData>();
 
-  // Define columns
   const columns: ColumnDef<ProductData>[] = [
     selectionColumn,
     {
@@ -143,7 +141,6 @@ export default function ProductList() {
     setIsDeleteDialogOpen(true);
   };
 
-  // Actions column with edit and delete
   const actionsColumn = createActionsColumn<ProductData>((product) => [
     <DropdownMenuItem key="edit" onClick={() => handleOpenEditModal(product)}>
       <Pencil className="mr-2 size-4" />

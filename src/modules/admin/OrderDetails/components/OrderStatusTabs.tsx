@@ -41,12 +41,9 @@ import {
   STATUS_CONFIG,
 } from "@/utils/orderStatusUtils";
 
-// Define the schema dynamically based on the current order status
 const createUpdateOrderSchema = (order: OrderData) => {
   const availableStatuses = getAvailableNextStatuses(order.status);
 
-  // If no transitions are available (like for cancelled or delivered orders),
-  // we'll still need a valid schema but disable the form
   return z.object({
     status:
       availableStatuses.length > 0
@@ -67,16 +64,13 @@ export default function OrderStatusTabs({
 }: OrderStatusTabsProps) {
   const [updating, setUpdating] = useState(false);
 
-  // Get available next statuses based on the current order status
   const availableNextStatuses = useMemo(
     () => getAvailableNextStatuses(order.status),
     [order.status]
   );
 
-  // Check if the order can be updated
   const canUpdateOrder = availableNextStatuses.length > 0;
 
-  // Create the form schema based on the current order status
   const updateOrderSchema = createUpdateOrderSchema(order);
   type UpdateOrderFormValues = z.infer<typeof updateOrderSchema>;
 

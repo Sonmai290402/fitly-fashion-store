@@ -10,18 +10,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ProductData } from "@/types/product.types";
 
 interface CollectionProductGridProps {
   products: ProductData[];
   collectionTitle?: string;
   className?: string;
+  isLoading?: boolean;
 }
 
 const CollectionGrid = ({
   products,
   collectionTitle,
   className = "",
+  isLoading = false,
 }: CollectionProductGridProps) => {
   const [sortBy, setSortBy] = useState("default");
   const [displayedProducts, setDisplayedProducts] =
@@ -57,7 +60,6 @@ const CollectionGrid = ({
         });
         break;
       default:
-        // Use newest sort as default
         sorted = sorted.sort((a, b) => {
           const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -68,6 +70,29 @@ const CollectionGrid = ({
 
     setDisplayedProducts(sorted);
   }, [products, sortBy]);
+
+  if (isLoading) {
+    return (
+      <div className={className}>
+        <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+          <div>
+            {collectionTitle ? <Skeleton className="h-9 w-48 mb-1" /> : null}
+            <Skeleton className="h-4 w-32" />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-[180px]" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {Array.from({ length: 10 }).map((_, index) => (
+            <ProductCardSkeleton key={index} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
@@ -108,6 +133,20 @@ const CollectionGrid = ({
           <p className="text-gray-500">No products found in this collection.</p>
         </div>
       )}
+    </div>
+  );
+};
+
+const ProductCardSkeleton = () => {
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-lg border">
+      <Skeleton className="aspect-[3/4] w-full object-cover" />
+
+      <div className="flex flex-col p-3 gap-2">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-5 w-24" />
+      </div>
     </div>
   );
 };

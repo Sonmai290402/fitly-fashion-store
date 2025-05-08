@@ -33,7 +33,6 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Rendering the full dashboard structure, with loading states for content
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -54,10 +53,8 @@ const AdminDashboard = () => {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {loading ? (
-          // Skeleton loading state for stats cards
           Array(4)
             .fill(0)
             .map((_, i) => (

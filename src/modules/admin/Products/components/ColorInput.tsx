@@ -88,7 +88,6 @@ export default function ColorInput({ nestIndex }: { nestIndex: number }) {
     name: string;
     colorCode: string;
   }) => {
-    // Toggle color selection if the same color is clicked again
     if (activeColorName === color.name) {
       setValue(`colors.${nestIndex}.name`, "");
       setValue(`colors.${nestIndex}.colorCode`, "");

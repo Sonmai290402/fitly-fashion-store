@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuthStore } from "@/store/authStore";
 import { useReviewStore } from "@/store/reviewStore";
 
 import { ReviewCard } from "./ReviewCard";
@@ -25,12 +26,25 @@ export function ReviewList({
   const [sortBy, setSortBy] = useState<string>("recent");
   const [filterRating, setFilterRating] = useState<string>(initialFilterRating);
 
-  const { reviews, loading, hasMore, fetchProductReviews, fetchMoreReviews } =
-    useReviewStore();
+  const {
+    reviews,
+    loading,
+    hasMore,
+    fetchProductReviews,
+    fetchMoreReviews,
+    loadUserVotes,
+  } = useReviewStore();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     fetchProductReviews(productId, sortBy, filterRating);
   }, [productId, sortBy, filterRating, fetchProductReviews]);
+
+  useEffect(() => {
+    if (user) {
+      loadUserVotes();
+    }
+  }, [user, loadUserVotes]);
 
   const handleLoadMore = () => {
     fetchMoreReviews(productId, sortBy, filterRating);

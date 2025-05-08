@@ -133,7 +133,6 @@ const UserList = () => {
     }
   };
 
-  // Custom row selection function to prevent selecting current user
   const customSelectRowFn = (user: UserData) => {
     return currentUser?.uid !== user.uid;
   };
@@ -225,7 +224,6 @@ const UserList = () => {
     },
   ];
 
-  // Create actions column
   const actionsColumn = createActionsColumn<UserData>((user) => {
     const isCurrentUser = currentUser?.uid === user.uid;
     const canEdit = currentUser?.role === "admin" || isCurrentUser;

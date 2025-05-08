@@ -22,7 +22,6 @@ import {
 import { OrderData, OrderStatus } from "@/types/order.types";
 import { ProductData } from "@/types/product.types";
 
-// Color palette for charts
 export const DASHBOARD_COLORS = [
   "#0088FE",
   "#00C49F",
@@ -57,7 +56,6 @@ const getDateFromTimestamp = (timestamp: FirestoreTimestamp): Date => {
     return timestamp.toDate();
   }
 
-  // Check for Firestore server timestamp object structure
   if (
     typeof timestamp === "object" &&
     "seconds" in timestamp &&
@@ -66,7 +64,6 @@ const getDateFromTimestamp = (timestamp: FirestoreTimestamp): Date => {
     return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate();
   }
 
-  // Check for objects with toDate method
   if (
     typeof timestamp === "object" &&
     "toDate" in timestamp &&
@@ -75,12 +72,10 @@ const getDateFromTimestamp = (timestamp: FirestoreTimestamp): Date => {
     return timestamp.toDate();
   }
 
-  // Fallback to regular Date parsing if it's a string
   if (typeof timestamp === "string") {
     return new Date(timestamp);
   }
 
-  // Default fallback
   return new Date();
 };
 
@@ -104,7 +99,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
     set({ loading: true });
 
     try {
-      // Fetch counts
       const ordersCount = await getCountFromServer(
         collection(fireDB, "orders")
       );
@@ -113,7 +107,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
       );
       const usersCount = await getCountFromServer(collection(fireDB, "users"));
 
-      // Recent orders
       const recentOrdersQuery = query(
         collection(fireDB, "orders"),
         orderBy("createdAt", "desc"),
@@ -125,7 +118,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
         ...doc.data(),
       })) as OrderData[];
 
-      // Calculate total revenue and average order value
       const allOrdersQuery = query(
         collection(fireDB, "orders"),
         where("status", "!=", "cancelled")
@@ -143,7 +135,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
       const averageOrderValue =
         allOrdersData.length > 0 ? totalRevenue / allOrdersData.length : 0;
 
-      // Order status distribution
       const statusCounts: Record<OrderStatus, number> = {
         pending: 0,
         processing: 0,
@@ -165,7 +156,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
         })
       );
 
-      // Sales data by date (last 7 days)
       const last7Days: Date[] = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - i);
@@ -178,7 +168,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
         nextDay.setDate(date.getDate() + 1);
 
         const ordersOnDate = allOrdersData.filter((order) => {
-          // Use helper function to safely convert createdAt to a Date object
           const orderDate = getDateFromTimestamp(order.createdAt);
           return orderDate >= date && orderDate < nextDay;
         });
@@ -199,7 +188,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
         };
       });
 
-      // Top selling products
       const productSales: Record<
         string,
         { count: number; title: string; revenue: number }
@@ -229,7 +217,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
 
-      // Revenue by category
       const productsQuery = query(collection(fireDB, "products"));
       const productsSnapshot = await getDocs(productsQuery);
       const productsData = productsSnapshot.docs.map((doc) => ({
@@ -237,13 +224,11 @@ const useDashboardStore = create<DashboardState>((set) => ({
         ...doc.data(),
       })) as ProductData[];
 
-      // Create a map of productId -> category
       const productCategories: Record<string, string> = {};
       productsData.forEach((product) => {
         productCategories[product.id as string] = product.category;
       });
 
-      // Revenue by category
       const categoryRevenue: Record<string, number> = {};
 
       allOrdersData.forEach((order) => {
@@ -264,7 +249,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
         }))
         .sort((a, b) => b.value - a.value);
 
-      // User growth data (simulated for past 6 months)
       const last6Months = Array.from({ length: 6 }, (_, i) => {
         const date = new Date();
         date.setMonth(date.getMonth() - i);
@@ -276,7 +260,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
         users: Math.round((index + 1) * (usersCount.data().count / 6)),
       }));
 
-      // Update state with all collected data
       set({
         loading: false,
         stats: {

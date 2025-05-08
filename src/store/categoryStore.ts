@@ -79,7 +79,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       genders.forEach((gender) => {
         if (gender.title === "Men") genderPriorityMap.set(gender.id, 1);
         else if (gender.title === "Women") genderPriorityMap.set(gender.id, 2);
-        else genderPriorityMap.set(gender.id, 3); // Any other gender has lowest priority
+        else genderPriorityMap.set(gender.id, 3);
       });
 
       const sortedCategories = [...categories].sort((a, b) => {

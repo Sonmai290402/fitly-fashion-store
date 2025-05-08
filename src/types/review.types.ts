@@ -20,6 +20,7 @@ export type ProductReview = {
   comment: string;
   images?: string[];
   helpfulVotes: number;
+  userVotes?: string[];
   status: "pending" | "approved" | "rejected";
   createdAt: string | Timestamp;
   updatedAt: string | Timestamp;
@@ -35,4 +36,12 @@ export type ProductRatingSummary = {
     2: number;
     1: number;
   };
+};
+
+export type ReviewVote = {
+  reviewId: string;
+  userId: string;
+  productId: string;
+  hasVoted: boolean;
+  createdAt: Timestamp;
 };

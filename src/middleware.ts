@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
   const cookie = request.cookies.get("auth_token")?.value;
 
   let user = null;
@@ -18,15 +18,52 @@ export function middleware(request: NextRequest) {
   }
 
   if (user && ["/login", "/signup"].includes(pathname)) {
-    return NextResponse.redirect(new URL("/", request.url));
+    const returnToParam = searchParams.get("return_to");
+
+    const returnPathCookie = request.cookies.get("return_to")?.value;
+    const returnPath = returnToParam || returnPathCookie;
+
+    let response;
+
+    if (returnPath) {
+      const decodedPath = decodeURIComponent(returnPath);
+      response = NextResponse.redirect(new URL(decodedPath, request.url));
+
+      if (returnPathCookie) {
+        response.cookies.delete("return_to");
+      }
+    } else {
+      response = NextResponse.redirect(new URL("/", request.url));
+    }
+
+    return response;
   }
 
   if (!user && pathname.startsWith("/admin")) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const response = NextResponse.redirect(new URL("/login", request.url));
+    response.cookies.set("return_to", encodeURIComponent(pathname), {
+      maxAge: 60 * 30,
+      path: "/",
+    });
+    return response;
   }
 
   if (user && user.role !== "admin" && pathname.startsWith("/admin")) {
     return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  if (
+    !user &&
+    (pathname.startsWith("/profile") ||
+      pathname.startsWith("/orders") ||
+      pathname.startsWith("/checkout"))
+  ) {
+    const response = NextResponse.redirect(new URL("/login", request.url));
+    response.cookies.set("return_to", encodeURIComponent(pathname), {
+      maxAge: 60 * 30,
+      path: "/",
+    });
+    return response;
   }
 
   if (pathname.startsWith("/products/") && pathname !== "/products") {
@@ -50,5 +87,13 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/signup", "/admin/:path*", "/products/:path*"],
+  matcher: [
+    "/login",
+    "/signup",
+    "/admin/:path*",
+    "/products/:path*",
+    "/profile/:path*",
+    "/orders/:path*",
+    "/checkout/:path*",
+  ],
 };

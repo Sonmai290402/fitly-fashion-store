@@ -36,30 +36,24 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
     }
   }, [user, productId, checkUserReviewEligibility]);
 
-  // Initial eligibility check
   useEffect(() => {
     checkEligibility();
   }, [user, productId, checkEligibility]);
 
-  // Initial rating summary fetch
   useEffect(() => {
     fetchProductRatingSummary(productId);
   }, [productId, fetchProductRatingSummary]);
 
-  // Reset filter when product changes
   useEffect(() => {
     setFilterRating("all");
   }, [productId]);
 
-  // Add listener for review deletion events
   useEffect(() => {
     const handleReviewDeleted = (event: Event) => {
       const customEvent = event as CustomEvent;
       if (customEvent.detail && customEvent.detail.productId === productId) {
-        // Refresh rating summary
         fetchProductRatingSummary(productId);
 
-        // Check eligibility again
         checkEligibility();
       }
     };

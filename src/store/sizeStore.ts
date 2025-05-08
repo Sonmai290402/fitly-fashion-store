@@ -27,7 +27,6 @@ export const useSizeStore = create<SizeState>((set) => ({
       })) as SizeData[];
 
       const sortedSizes = sizes.sort((a, b) => {
-        // Default to a high number if order is not defined
         const orderA = a.order !== undefined ? a.order : 9999;
         const orderB = b.order !== undefined ? b.order : 9999;
         return orderA - orderB;

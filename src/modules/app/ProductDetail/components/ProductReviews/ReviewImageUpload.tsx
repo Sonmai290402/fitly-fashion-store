@@ -32,34 +32,28 @@ export default function ReviewImageUpload({
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Check if adding these files would exceed the max image limit
     if (uploadedImages.length + files.length > maxImages) {
       toast.error(`You can only upload a maximum of ${maxImages} images.`);
       return;
     }
 
-    // Track uploads in progress
     setIsUploading(true);
     const uploadProgressMap: Record<string, number> = {};
 
-    // Process each file sequentially to prevent overwhelming the upload system
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const fileId = `${file.name}-${Date.now()}`;
 
-      // Skip invalid files
       if (!file.type.startsWith("image/")) {
         toast.error(`File "${file.name}" is not an image. Skipping.`);
         continue;
       }
 
-      // Check file size
       if (file.size > 2 * 1024 * 1024) {
         toast.error(`File "${file.name}" exceeds 2MB size limit. Skipping.`);
         continue;
       }
 
-      // Initialize progress tracking for this file
       uploadProgressMap[fileId] = 0;
       setUploadProgress({ ...uploadProgressMap });
 
@@ -76,7 +70,6 @@ export default function ReviewImageUpload({
       }
     }
 
-    // Reset state after all uploads are processed
     setIsUploading(false);
     setUploadProgress({});
 
@@ -129,7 +122,7 @@ export default function ReviewImageUpload({
               className="hidden"
               onChange={handleImageUpload}
               disabled={isUploading}
-              multiple // Add this attribute to enable multiple file selection
+              multiple
             />
 
             <button
@@ -155,7 +148,6 @@ export default function ReviewImageUpload({
 
       <p className="text-xs text-gray-500 mt-1">
         You can upload up to {maxImages} images. Max 2MB per image.
-        {/* Add info about multiple selection */}
         <span className="ml-1">Click to select multiple images at once.</span>
       </p>
     </div>

@@ -4,8 +4,8 @@ export const ALLOWED_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["processing", "cancelled"],
   processing: ["shipped", "cancelled"],
   shipped: ["delivered", "cancelled"],
-  delivered: [], // Final state, no further transitions
-  cancelled: [], // Final state, no further transitions
+  delivered: [],
+  cancelled: [],
 };
 
 export const STATUS_CONFIG: Record<

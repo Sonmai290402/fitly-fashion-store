@@ -11,6 +11,7 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  setDoc,
   startAfter,
   updateDoc,
   where,
@@ -21,7 +22,11 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 import { STORAGE_KEYS } from "@/constants";
 import { fireDB } from "@/firebase/firebaseConfig";
-import { ProductRatingSummary, ProductReview } from "@/types/review.types";
+import {
+  ProductRatingSummary,
+  ProductReview,
+  ReviewVote,
+} from "@/types/review.types";
 
 import { useAuthStore } from "./authStore";
 
@@ -32,8 +37,7 @@ const DEFAULT_PRODUCT_IMAGE = "/images/default-product.png";
 interface ReviewsState {
   reviews: ProductReview[];
   productRatings: Record<string, ProductRatingSummary>;
-  userHelpfulVotes: Record<string, boolean>;
-  userHelpfulVotesMap: Record<string, Record<string, boolean>>;
+  userVotesMap: Record<string, boolean>;
   loading: boolean;
   error: string | null;
   lastVisible: unknown;
@@ -65,13 +69,13 @@ interface ReviewsState {
     data: Partial<ProductReview>
   ) => Promise<boolean>;
   deleteReview: (reviewId: string, userId: string) => Promise<boolean>;
-  toggleHelpfulVote: (reviewId: string) => Promise<boolean>;
+  toggleHelpfulVote: (reviewId: string, productId: string) => Promise<boolean>;
   checkUserReviewEligibility: (
     userId: string,
     productId: string
   ) => Promise<boolean>;
   getUserReviews: (userId: string) => Promise<ProductReview[]>;
-  loadUserHelpfulVotes: () => void;
+  loadUserVotes: () => Promise<void>;
   fetchFeaturedReviews: (limitCount?: number) => Promise<ProductReview[]>;
   clearUserData: () => void;
   syncUserContext: () => void;
@@ -114,8 +118,7 @@ export const useReviewStore = create<ReviewsState>()(
   persist(
     (set, get) => ({
       reviews: [],
-      userHelpfulVotes: {},
-      userHelpfulVotesMap: {},
+      userVotesMap: {},
       productRatings: {},
       loading: false,
       error: null,
@@ -126,18 +129,14 @@ export const useReviewStore = create<ReviewsState>()(
       syncUserContext: () => {
         const currentUser = useAuthStore.getState().user;
         const userId = currentUser?.uid || null;
-        const { userHelpfulVotesMap } = get();
 
         console.log("[ReviewStore] Syncing user context:", userId);
 
         if (userId) {
-          // When logged in, load user's votes
           set({
             currentUserId: userId,
-            userHelpfulVotes: userHelpfulVotesMap[userId] || {},
           });
 
-          // Reload reviews with updated votes if they're already loaded
           const { reviews } = get();
           if (reviews.length > 0) {
             set({
@@ -149,25 +148,36 @@ export const useReviewStore = create<ReviewsState>()(
         } else {
           set({
             currentUserId: null,
-            userHelpfulVotes: {},
+            userVotesMap: {},
           });
         }
       },
 
-      loadUserHelpfulVotes: () => {
+      loadUserVotes: async () => {
         if (typeof window === "undefined") return;
 
         const currentUser = useAuthStore.getState().user;
         if (!currentUser) {
-          set({ userHelpfulVotes: {} });
+          set({ userVotesMap: {} });
           return;
         }
 
-        const { userHelpfulVotesMap } = get();
+        const userVotesQuery = query(
+          collection(fireDB, "votes"),
+          where("userId", "==", currentUser.uid)
+        );
+
+        const snapshot = await getDocs(userVotesQuery);
+
+        const votesMap: Record<string, boolean> = {};
+        snapshot.docs.forEach((doc) => {
+          const data = doc.data() as ReviewVote;
+          votesMap[data.reviewId] = data.hasVoted;
+        });
 
         set({
           currentUserId: currentUser.uid,
-          userHelpfulVotes: userHelpfulVotesMap[currentUser.uid] || {},
+          userVotesMap: votesMap,
         });
       },
 
@@ -461,8 +471,7 @@ export const useReviewStore = create<ReviewsState>()(
             return null;
           }
 
-          // Create the new review object with server timestamp
-          const timestamp = new Date(); // Use JavaScript Date for immediate display
+          const timestamp = new Date();
           const newReviewData = {
             ...reviewData,
             images: imageUrls,
@@ -473,16 +482,14 @@ export const useReviewStore = create<ReviewsState>()(
             updatedAt: timestamp.toISOString(),
           };
 
-          // Add to Firestore
           const newReviewRef = await addDoc(collection(fireDB, "reviews"), {
             ...newReviewData,
-            createdAt: serverTimestamp(), // Keep serverTimestamp for database
+            createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           });
 
           const newReviewId = newReviewRef.id;
 
-          // Get user data for display
           let userData = null;
           try {
             const userDoc = await getDocs(
@@ -499,7 +506,6 @@ export const useReviewStore = create<ReviewsState>()(
             console.error("Error fetching user data for new review:", error);
           }
 
-          // Create complete review object for UI
           const completeReview = {
             id: newReviewId,
             ...newReviewData,
@@ -518,9 +524,7 @@ export const useReviewStore = create<ReviewsState>()(
                 },
           } as ProductReview;
 
-          // Update the local reviews state
           set((state) => {
-            // Get current product ratings or create default
             const currentRatings = state.productRatings[
               reviewData.productId
             ] || {
@@ -529,7 +533,6 @@ export const useReviewStore = create<ReviewsState>()(
               ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
             };
 
-            // Calculate new values
             const rating = reviewData.rating as number;
             const currentTotal = currentRatings.totalReviews;
             const currentAvg = currentRatings.averageRating;
@@ -541,7 +544,6 @@ export const useReviewStore = create<ReviewsState>()(
             distribution[rating as keyof typeof distribution] =
               (distribution[rating as keyof typeof distribution] || 0) + 1;
 
-            // Return updated state with both review and rating summary updated
             return {
               ...state,
               reviews: [completeReview, ...state.reviews],
@@ -557,9 +559,7 @@ export const useReviewStore = create<ReviewsState>()(
             };
           });
 
-          // Update product rating stats
           await runTransaction(fireDB, async (transaction) => {
-            // Existing product rating update code...
             const productRef = doc(fireDB, "products", reviewData.productId);
             const productDoc = await transaction.get(productRef);
 
@@ -592,7 +592,6 @@ export const useReviewStore = create<ReviewsState>()(
             });
           });
 
-          // Update user stats
           const userRef = doc(fireDB, "users", reviewData.userId);
           await updateDoc(userRef, {
             reviewCount: increment(1),
@@ -722,19 +721,15 @@ export const useReviewStore = create<ReviewsState>()(
 
           await deleteDoc(reviewRef);
 
-          // Update the product rating summary immediately in local state
           set((state) => {
-            // Get current product ratings or use a default
             const currentRatings = state.productRatings[productId] || {
               averageRating: 0,
               totalReviews: 0,
               ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
             };
 
-            // Calculate new values
             const currentTotal = currentRatings.totalReviews;
             if (currentTotal <= 1) {
-              // If this was the only review, reset everything
               return {
                 ...state,
                 reviews: state.reviews.filter(
@@ -752,7 +747,6 @@ export const useReviewStore = create<ReviewsState>()(
               };
             }
 
-            // Calculate new average and distribution
             const currentAvg = currentRatings.averageRating;
             const distribution = { ...currentRatings.ratingDistribution };
             const newTotal = currentTotal - 1;
@@ -763,7 +757,6 @@ export const useReviewStore = create<ReviewsState>()(
               distribution[rating as keyof typeof distribution] - 1
             );
 
-            // Return updated state
             return {
               ...state,
               reviews: state.reviews.filter((review) => review.id !== reviewId),
@@ -779,7 +772,6 @@ export const useReviewStore = create<ReviewsState>()(
             };
           });
 
-          // Also update the database (in background)
           await runTransaction(fireDB, async (transaction) => {
             const productRef = doc(fireDB, "products", productId);
             const productDoc = await transaction.get(productRef);
@@ -823,7 +815,6 @@ export const useReviewStore = create<ReviewsState>()(
             });
           });
 
-          // Update user review count
           const userRef = doc(fireDB, "users", reviewData.userId);
           await updateDoc(userRef, {
             reviewCount: increment(-1),
@@ -842,75 +833,115 @@ export const useReviewStore = create<ReviewsState>()(
         }
       },
 
-      toggleHelpfulVote: async (reviewId) => {
+      toggleHelpfulVote: async (reviewId, productId) => {
         const currentUser = useAuthStore.getState().user;
         if (!currentUser) {
           toast.error("Please login to vote");
           return false;
         }
 
-        const { userHelpfulVotes, userHelpfulVotesMap, currentUserId } = get();
+        const { userVotesMap, currentUserId } = get();
         if (!currentUserId || currentUserId !== currentUser.uid) {
           set({ currentUserId: currentUser.uid });
         }
 
-        const hasVoted = userHelpfulVotes[reviewId];
+        const hasVoted = userVotesMap[reviewId];
+        const userId = currentUser.uid;
 
-        const updatedUserVotes = {
-          ...userHelpfulVotes,
+        const updatedVotesMap = {
+          ...userVotesMap,
           [reviewId]: !hasVoted,
         };
 
-        const updatedVotesMap = {
-          ...userHelpfulVotesMap,
-          [currentUser.uid]: updatedUserVotes,
-        };
-
         set((state) => ({
-          userHelpfulVotes: updatedUserVotes,
-          userHelpfulVotesMap: updatedVotesMap,
-          reviews: state.reviews.map((review) =>
-            review.id === reviewId
-              ? {
-                  ...review,
-                  helpfulVotes:
-                    (review.helpfulVotes || 0) + (hasVoted ? -1 : 1),
-                }
-              : review
-          ),
+          userVotesMap: updatedVotesMap,
+          reviews: state.reviews.map((review) => {
+            if (review.id !== reviewId) return review;
+
+            let updatedUserVotes = review.userVotes || [];
+
+            if (hasVoted) {
+              updatedUserVotes = updatedUserVotes.filter((id) => id !== userId);
+            } else {
+              updatedUserVotes = [...updatedUserVotes, userId];
+            }
+
+            return {
+              ...review,
+              userVotes: updatedUserVotes,
+              helpfulVotes: (review.helpfulVotes || 0) + (hasVoted ? -1 : 1),
+            };
+          }),
         }));
 
         try {
-          await updateDoc(doc(fireDB, "reviews", reviewId), {
-            helpfulVotes: increment(hasVoted ? -1 : 1),
+          const reviewRef = doc(fireDB, "reviews", reviewId);
+          const reviewDoc = await getDoc(reviewRef);
+
+          if (!reviewDoc.exists()) {
+            throw new Error("Review not found");
+          }
+
+          const reviewData = reviewDoc.data();
+          let userVotes = reviewData.userVotes || [];
+
+          if (hasVoted) {
+            userVotes = userVotes.filter((id: string) => id !== userId);
+          } else {
+            if (!userVotes.includes(userId)) {
+              userVotes.push(userId);
+            }
+          }
+
+          const voteRef = doc(fireDB, "votes", `${userId}_${reviewId}`);
+
+          if (hasVoted) {
+            await deleteDoc(voteRef);
+          } else {
+            await setDoc(voteRef, {
+              userId,
+              reviewId,
+              productId,
+              hasVoted: true,
+              createdAt: serverTimestamp(),
+            });
+          }
+
+          await updateDoc(reviewRef, {
+            userVotes,
+            helpfulVotes: userVotes.length,
+            updatedAt: serverTimestamp(),
           });
 
           return true;
         } catch (error) {
           console.error("Error toggling helpful vote:", error);
 
-          const revertedUserVotes = {
-            ...userHelpfulVotes,
+          const revertedVotesMap = {
+            ...userVotesMap,
             [reviewId]: hasVoted,
           };
 
-          const revertedVotesMap = {
-            ...userHelpfulVotesMap,
-            [currentUser.uid]: revertedUserVotes,
-          };
-
           set((state) => ({
-            userHelpfulVotes: revertedUserVotes,
-            userHelpfulVotesMap: revertedVotesMap,
-            reviews: state.reviews.map((review) =>
-              review.id === reviewId
-                ? {
-                    ...review,
-                    helpfulVotes:
-                      (review.helpfulVotes || 0) + (hasVoted ? 1 : -1),
-                  }
-                : review
-            ),
+            userVotesMap: revertedVotesMap,
+            reviews: state.reviews.map((review) => {
+              if (review.id !== reviewId) return review;
+
+              let revertedUserVotes = review.userVotes || [];
+              if (!hasVoted && revertedUserVotes.includes(userId)) {
+                revertedUserVotes = revertedUserVotes.filter(
+                  (id) => id !== userId
+                );
+              } else if (hasVoted && !revertedUserVotes.includes(userId)) {
+                revertedUserVotes = [...revertedUserVotes, userId];
+              }
+
+              return {
+                ...review,
+                userVotes: revertedUserVotes,
+                helpfulVotes: (review.helpfulVotes || 0) + (hasVoted ? 1 : -1),
+              };
+            }),
             error: (error as Error).message,
           }));
 
@@ -1047,7 +1078,7 @@ export const useReviewStore = create<ReviewsState>()(
 
       clearUserData: () => {
         set({
-          userHelpfulVotes: {},
+          userVotesMap: {},
           currentUserId: null,
         });
       },
@@ -1055,7 +1086,7 @@ export const useReviewStore = create<ReviewsState>()(
     {
       name: STORAGE_KEYS.REVIEW_VOTES,
       partialize: (state) => ({
-        userHelpfulVotesMap: state.userHelpfulVotesMap,
+        userVotesMap: state.userVotesMap,
         currentUserId: state.currentUserId,
       }),
       storage: createJSONStorage(() =>

@@ -41,7 +41,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
   );
   const [localHasVoted, setLocalHasVoted] = useState(false);
 
-  const { toggleHelpfulVote, deleteReview, userHelpfulVotes, loading } =
+  const { toggleHelpfulVote, deleteReview, userVotesMap, loading } =
     useReviewStore();
 
   const { user } = useAuthStore();
@@ -51,9 +51,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
   const formattedDate = formatTimestamp(review.createdAt);
 
   useEffect(() => {
-    const handleAuthChange = (event: Event) => {
-      console.log(" handleAuthChange ~ event:", event.target);
-
+    const handleAuthChange = () => {
       setNeedsRefresh((prev) => !prev);
     };
 
@@ -63,48 +61,46 @@ export function ReviewCard({ review }: ReviewCardProps) {
     };
   }, []);
 
-  // Update local state when user changes or votes change
   useEffect(() => {
-    const hasVoted = user ? !!userHelpfulVotes[review.id] : false;
+    const hasVoted = user ? !!userVotesMap[review.id] : false;
     setLocalHasVoted(hasVoted);
     setLocalHelpfulCount(review.helpfulVotes);
+  }, [user, userVotesMap, review.id, review.helpfulVotes, needsRefresh]);
 
-    // For debugging
-    console.log(
-      `[ReviewCard] Review ${review.id}, User ${
-        user?.uid || "none"
-      }, HasVoted: ${hasVoted}`
-    );
-  }, [user, userHelpfulVotes, review.id, review.helpfulVotes, needsRefresh]);
+  useEffect(() => {
+    if (!user) {
+      setLocalHasVoted(false);
+    } else {
+      setLocalHasVoted(!!userVotesMap[review.id]);
+    }
+  }, [user?.uid, review.id, userVotesMap, user]);
 
   useEffect(() => {
     if (user) {
-      setLocalHasVoted(!!userHelpfulVotes[review.id]);
+      setLocalHasVoted(!!userVotesMap[review.id]);
     } else {
       setLocalHasVoted(false);
     }
-  }, [user?.uid, review.id, userHelpfulVotes, user]);
-
-  useEffect(() => {
-    setLocalHasVoted(!!userHelpfulVotes[review.id]);
     setLocalHelpfulCount(review.helpfulVotes);
-  }, [review.id, review.helpfulVotes, userHelpfulVotes]);
+  }, [review.id, review.helpfulVotes, userVotesMap, user]);
 
   const handleToggleHelpful = async () => {
-    if (isVoting || !user) return;
+    if (isVoting) return;
 
-    // Optimistic UI update
+    if (!user) {
+      await toggleHelpfulVote(review.id, review.productId);
+      return;
+    }
+
     setIsVoting(true);
     const wasPreviouslyVoted = localHasVoted;
 
-    // Update local state immediately
     setLocalHasVoted(!wasPreviouslyVoted);
     setLocalHelpfulCount((prev) => (wasPreviouslyVoted ? prev - 1 : prev + 1));
 
     try {
-      await toggleHelpfulVote(review.id);
+      await toggleHelpfulVote(review.id, review.productId);
     } catch (error) {
-      // In case of error, revert optimistic update
       setLocalHasVoted(wasPreviouslyVoted);
       setLocalHelpfulCount((prev) =>
         wasPreviouslyVoted ? prev + 1 : prev - 1
@@ -219,12 +215,8 @@ export function ReviewCard({ review }: ReviewCardProps) {
               variant="ghost"
               size="sm"
               onClick={handleToggleHelpful}
-              disabled={isSubmitting || isVoting || !user}
-              className={clsx(
-                "p-1",
-                isVoting && "opacity-70",
-                !user && "cursor-not-allowed opacity-50"
-              )}
+              disabled={isSubmitting || isVoting}
+              className={clsx("p-1", isVoting || (!user && "opacity-70"))}
               title={
                 !user
                   ? "Login to mark as helpful"

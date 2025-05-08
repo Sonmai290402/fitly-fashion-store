@@ -14,6 +14,7 @@ import { OrderStatus } from "@/types/order.types";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { formatTimestamp } from "@/utils/formatTimestamp";
 
+import OrderDetailsSkeleton from "./OrderDetailsSkeleton";
 import { OrderTrackingProgress } from "./OrderTrackingProgress";
 
 export default function OrderDetails() {
@@ -42,11 +43,7 @@ export default function OrderDetails() {
   }, [id, fetchOrderById]);
 
   if (loading) {
-    return (
-      <div className="container mx-auto py-8 px-4">
-        Loading order details...
-      </div>
-    );
+    return <OrderDetailsSkeleton />;
   }
 
   if (error || !currentOrder) {

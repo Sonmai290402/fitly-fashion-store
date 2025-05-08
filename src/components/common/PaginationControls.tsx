@@ -69,7 +69,6 @@ export function PaginationControls({
       return [...leftRange, "rightEllipsis", totalPages];
     }
 
-    // Case 4: Both ellipses
     const middleRange = Array.from(
       { length: rightSiblingIndex - leftSiblingIndex + 1 },
       (_, i) => leftSiblingIndex + i
@@ -78,7 +77,6 @@ export function PaginationControls({
     return [1, "leftEllipsis", ...middleRange, "rightEllipsis", totalPages];
   }, [currentPage, totalPages]);
 
-  // Get the page numbers to display
   const pageNumbers = getPageNumbers();
 
   if (totalPages <= 1) return null;

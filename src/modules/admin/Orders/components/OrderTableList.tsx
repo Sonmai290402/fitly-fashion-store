@@ -100,7 +100,6 @@ export default function OrderTableList() {
     },
   ];
 
-  // Add actions column using the helper function
   const actionsColumn = createActionsColumn<OrderData>((order) => [
     <DropdownMenuItem key="view" asChild>
       <Link href={`/admin/orders/${order.id}`}>View details</Link>
@@ -113,7 +112,6 @@ export default function OrderTableList() {
     return <div className="text-center py-8 text-red-500">{error}</div>;
   }
 
-  // Custom empty state component for orders
   const EmptyState = () => (
     <div className="flex flex-col items-center py-6">
       <Package className="w-12 h-12 text-muted-foreground mb-4" />
