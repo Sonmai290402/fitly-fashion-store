@@ -9,4 +9,5 @@ export interface CartItem {
   size?: string;
   productId: string;
   variantId?: string;
+  userId?: string;
 }

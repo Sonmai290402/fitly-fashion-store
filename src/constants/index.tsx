@@ -108,27 +108,7 @@ export const adminMenuItems = [
   },
 ];
 
-export const categoryOptionsByGender = {
-  Men: [
-    { option: "t-shirts", label: "T-shirts" },
-    { option: "pants", label: "Pants" },
-    { option: "sweater", label: "Sweater" },
-  ],
-  Women: [
-    { option: "dresses", label: "Dresses" },
-    { option: "skirt", label: "Skirt" },
-    { option: "bra", label: "Bra" },
-  ],
-};
-
 export const commonSizes = ["XS", "S", "M", "L", "XL", "XXL"];
-
-export const commonColors = [
-  { name: "Black", colorCode: "#000000" },
-  { name: "White", colorCode: "#FFFFFF" },
-  { name: "Blue", colorCode: "#0000FF" },
-  { name: "Red", colorCode: "#FF0000" },
-];
 
 export const STORAGE_KEYS = {
   AUTH_USER: "auth_user_data",

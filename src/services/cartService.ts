@@ -10,8 +10,17 @@ export const saveCartToFirestore = async (
   items: CartItem[]
 ): Promise<void> => {
   try {
+    const itemsWithUserId = items.map((item) => ({
+      ...item,
+      userId,
+    }));
+
     const cartRef = doc(fireDB, CART_COLLECTION, userId);
-    await setDoc(cartRef, { items, updatedAt: new Date() });
+    await setDoc(cartRef, {
+      items: itemsWithUserId,
+      userId,
+      updatedAt: new Date(),
+    });
   } catch (error) {
     console.error("Error saving cart to Firestore:", error);
     throw error;

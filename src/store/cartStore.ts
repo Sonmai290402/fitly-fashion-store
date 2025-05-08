@@ -43,10 +43,21 @@ export const useCartStore = create<CartState>((set, get) => ({
   items: [],
   loading: true,
 
-  addItem: (newItem) => {
+  addItem: (newItem: CartItem) => {
     set((state) => {
+      let userId: string | null = null;
+      try {
+        const userData = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+        if (userData) {
+          const user = JSON.parse(userData);
+          userId = user.uid;
+        }
+      } catch (e) {
+        console.error("Error getting user ID when adding item:", e);
+      }
+
       const existingItemIndex = state.items.findIndex(
-        (item) =>
+        (item: CartItem) =>
           item.id === newItem.id &&
           item.color === newItem.color &&
           item.size === newItem.size
@@ -58,25 +69,19 @@ export const useCartStore = create<CartState>((set, get) => ({
           ...updatedItems[existingItemIndex],
           quantity:
             updatedItems[existingItemIndex].quantity + (newItem.quantity || 1),
+
+          ...(userId && { userId }),
         };
       } else {
-        updatedItems.push({ ...newItem, quantity: newItem.quantity || 1 });
+        updatedItems.push({
+          ...newItem,
+          quantity: newItem.quantity || 1,
+          ...(userId && { userId }),
+        });
       }
 
       setTimeout(() => {
         const { saveCart } = get();
-
-        let userId: string | null = null;
-        try {
-          const userData = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
-          if (userData) {
-            const user = JSON.parse(userData);
-            userId = user.uid;
-          }
-        } catch (e) {
-          console.error("Error getting user ID when saving cart:", e);
-        }
-
         saveCart(userId);
       }, 0);
 
@@ -86,7 +91,9 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   removeItem: (itemId) => {
     set((state) => {
-      const updatedItems = state.items.filter((item) => item.id !== itemId);
+      const updatedItems = state.items.filter(
+        (item: CartItem) => item.id !== itemId
+      );
 
       setTimeout(() => {
         const { saveCart } = get();
@@ -98,7 +105,7 @@ export const useCartStore = create<CartState>((set, get) => ({
             userId = user.uid;
           }
         } catch (e) {
-          console.error("Error getting user ID when saving cart:", e);
+          console.error("Error getting user ID when removing item:", e);
         }
         saveCart(userId);
       }, 0);
@@ -111,22 +118,30 @@ export const useCartStore = create<CartState>((set, get) => ({
     if (quantity < 1) return;
 
     set((state) => {
-      const updatedItems = state.items.map((item) =>
-        item.id === itemId ? { ...item, quantity } : item
+      let userId: string | null = null;
+      try {
+        const userData = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+        if (userData) {
+          const user = JSON.parse(userData);
+          userId = user.uid;
+        }
+      } catch (e) {
+        console.error("Error getting user ID when updating quantity:", e);
+      }
+
+      const updatedItems = state.items.map((item: CartItem) =>
+        item.id === itemId
+          ? {
+              ...item,
+              quantity,
+
+              ...(userId && { userId }),
+            }
+          : item
       );
 
       setTimeout(() => {
         const { saveCart } = get();
-        let userId: string | null = null;
-        try {
-          const userData = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
-          if (userData) {
-            const user = JSON.parse(userData);
-            userId = user.uid;
-          }
-        } catch (e) {
-          console.error("Error getting user ID when saving cart:", e);
-        }
         saveCart(userId);
       }, 0);
 
@@ -146,7 +161,6 @@ export const useCartStore = create<CartState>((set, get) => ({
           const user = JSON.parse(userData);
           userId = user.uid;
 
-          // Also delete from Firestore if user is logged in
           if (userId) {
             await deleteCartFromFirestore(userId);
           }
@@ -159,15 +173,18 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   getItem: (itemId) => {
-    return get().items.find((item) => item.id === itemId);
+    return get().items.find((item: CartItem) => item.id === itemId);
   },
 
   getTotalItems: () => {
-    return get().items.reduce((total, item) => total + item.quantity, 0);
+    return get().items.reduce(
+      (total, item: CartItem) => total + item.quantity,
+      0
+    );
   },
 
   getTotalPrice: () => {
-    return get().items.reduce((total, item) => {
+    return get().items.reduce((total, item: CartItem) => {
       const price = item.sale_price || item.price;
       return total + price * item.quantity;
     }, 0);
@@ -207,13 +224,21 @@ export const useCartStore = create<CartState>((set, get) => ({
         try {
           items = await loadCartFromFirestore(userId);
 
+          items = items.map((item: CartItem) => ({
+            ...item,
+            userId,
+          }));
+
           if (items.length === 0) {
             const localCart = JSON.parse(
               localStorage.getItem(getUserCartKey(userId)) || "{}"
             );
 
             if (Array.isArray(localCart.items) && localCart.items.length > 0) {
-              items = localCart.items;
+              items = localCart.items.map((item: CartItem) => ({
+                ...item,
+                userId,
+              }));
 
               saveCartToFirestore(userId, items).catch((err) =>
                 console.error(
@@ -231,7 +256,10 @@ export const useCartStore = create<CartState>((set, get) => ({
           );
 
           if (Array.isArray(localCart.items)) {
-            items = localCart.items;
+            items = localCart.items.map((item: CartItem) => ({
+              ...item,
+              userId,
+            }));
           }
         }
 
@@ -242,7 +270,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         if (Array.isArray(guestCart.items) && guestCart.items.length > 0) {
           for (const guestItem of guestCart.items) {
             const index = items.findIndex(
-              (item) =>
+              (item: CartItem) =>
                 item.id === guestItem.id &&
                 item.color === guestItem.color &&
                 item.size === guestItem.size
@@ -250,8 +278,12 @@ export const useCartStore = create<CartState>((set, get) => ({
 
             if (index !== -1) {
               items[index].quantity += guestItem.quantity;
+              items[index].userId = userId;
             } else {
-              items.push(guestItem);
+              items.push({
+                ...guestItem,
+                userId,
+              });
             }
           }
 
@@ -270,6 +302,8 @@ export const useCartStore = create<CartState>((set, get) => ({
 
         if (Array.isArray(guestCart.items)) {
           items = guestCart.items;
+
+          items = items.map(({ userId: _, ...item }: CartItem) => item);
         }
       }
 
@@ -306,18 +340,32 @@ export const useCartStore = create<CartState>((set, get) => ({
 
       const firestoreItems = await loadCartFromFirestore(userId);
 
+      const firestoreItemsWithUserId = firestoreItems.map((item: CartItem) => ({
+        ...item,
+        userId,
+      }));
+
       const localStorageKey = getUserCartKey(userId);
       const localCart = JSON.parse(
         localStorage.getItem(localStorageKey) || "{}"
       );
       const localItems = Array.isArray(localCart.items) ? localCart.items : [];
 
-      let mergedItems = firestoreItems;
+      const localItemsWithUserId = localItems.map((item: CartItem) => ({
+        ...item,
+        userId,
+      }));
 
-      if (firestoreItems.length === 0 && localItems.length > 0) {
-        mergedItems = localItems;
+      const mergedItems =
+        firestoreItemsWithUserId.length > 0
+          ? firestoreItemsWithUserId
+          : localItemsWithUserId;
 
-        await saveCartToFirestore(userId, localItems);
+      if (
+        firestoreItemsWithUserId.length === 0 &&
+        localItemsWithUserId.length > 0
+      ) {
+        await saveCartToFirestore(userId, localItemsWithUserId);
       }
 
       set({ items: mergedItems, loading: false });
