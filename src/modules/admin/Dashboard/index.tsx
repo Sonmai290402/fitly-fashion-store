@@ -8,8 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import useDashboardStore from "@/store/dashboardStore";
 import { formatCurrency } from "@/utils/formatCurrency";
 
-import OrderStatusChart from "./components/OrderStatusChart";
-import RecentOrdersList from "./components/RecentOrdersList";
 import RevenueByCategoryChart from "./components/RevenueByCategoryChart";
 import SalesOverviewChart from "./components/SalesOverviewChart";
 import StatsCard from "./components/StatsCard";
@@ -20,9 +18,7 @@ const AdminDashboard = () => {
   const {
     loading,
     stats,
-    recentOrders,
     salesData,
-    statusDistribution,
     topProducts,
     revenueByCategory,
     userGrowth,
@@ -92,7 +88,6 @@ const AdminDashboard = () => {
       <Tabs defaultValue="sales">
         <TabsList>
           <TabsTrigger value="sales">Sales</TabsTrigger>
-          <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
         </TabsList>
@@ -111,24 +106,6 @@ const AdminDashboard = () => {
             <div className="grid gap-4 md:grid-cols-2">
               <SalesOverviewChart salesData={salesData} />
               <RevenueByCategoryChart revenueByCategory={revenueByCategory} />
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="orders" className="space-y-4">
-          {loading ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="h-80 rounded-lg border bg-card shadow-sm flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-              <div className="h-80 rounded-lg border bg-card shadow-sm flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              <OrderStatusChart statusDistribution={statusDistribution} />
-              <RecentOrdersList recentOrders={recentOrders} />
             </div>
           )}
         </TabsContent>

@@ -19,8 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-import { TopProductData } from "../dashboard.types";
+import { TopProductData } from "@/types/dashboard.types";
 
 interface TopProductsChartProps {
   topProducts: TopProductData[];

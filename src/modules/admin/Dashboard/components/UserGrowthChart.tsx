@@ -18,8 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-import { UserGrowthData } from "../dashboard.types";
+import { UserGrowthData } from "@/types/dashboard.types";
 
 interface UserGrowthChartProps {
   userGrowth: UserGrowthData[];

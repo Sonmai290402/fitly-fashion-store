@@ -16,8 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-import { SalesDataPoint } from "../dashboard.types";
+import { SalesDataPoint } from "@/types/dashboard.types";
 
 interface SalesOverviewChartProps {
   salesData: SalesDataPoint[];

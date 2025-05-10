@@ -8,9 +8,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { DASHBOARD_COLORS } from "@/store/dashboardStore";
+import { ChartDataPoint } from "@/types/dashboard.types";
 import { formatCurrency } from "@/utils/formatCurrency";
-
-import { ChartDataPoint } from "../dashboard.types";
 
 interface RevenueByCategoryChartProps {
   revenueByCategory: ChartDataPoint[];

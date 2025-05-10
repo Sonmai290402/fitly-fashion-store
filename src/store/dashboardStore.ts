@@ -3,8 +3,6 @@ import {
   FieldValue,
   getCountFromServer,
   getDocs,
-  limit,
-  orderBy,
   query,
   Timestamp,
   where,
@@ -18,8 +16,8 @@ import {
   SalesDataPoint,
   TopProductData,
   UserGrowthData,
-} from "@/modules/admin/Dashboard/dashboard.types";
-import { OrderData, OrderStatus } from "@/types/order.types";
+} from "@/types/dashboard.types";
+import { OrderData } from "@/types/order.types";
 import { ProductData } from "@/types/product.types";
 
 export const DASHBOARD_COLORS = [
@@ -33,9 +31,7 @@ export const DASHBOARD_COLORS = [
 interface DashboardState {
   loading: boolean;
   stats: DashboardStats;
-  recentOrders: OrderData[];
   salesData: SalesDataPoint[];
-  statusDistribution: ChartDataPoint[];
   topProducts: TopProductData[];
   revenueByCategory: ChartDataPoint[];
   userGrowth: UserGrowthData[];
@@ -88,9 +84,7 @@ const useDashboardStore = create<DashboardState>((set) => ({
     totalRevenue: 0,
     averageOrderValue: 0,
   },
-  recentOrders: [],
   salesData: [],
-  statusDistribution: [],
   topProducts: [],
   revenueByCategory: [],
   userGrowth: [],
@@ -106,17 +100,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
         collection(fireDB, "products")
       );
       const usersCount = await getCountFromServer(collection(fireDB, "users"));
-
-      const recentOrdersQuery = query(
-        collection(fireDB, "orders"),
-        orderBy("createdAt", "desc"),
-        limit(5)
-      );
-      const recentOrdersSnapshot = await getDocs(recentOrdersQuery);
-      const recentOrdersData = recentOrdersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as OrderData[];
 
       const allOrdersQuery = query(
         collection(fireDB, "orders"),
@@ -134,27 +117,6 @@ const useDashboardStore = create<DashboardState>((set) => ({
       );
       const averageOrderValue =
         allOrdersData.length > 0 ? totalRevenue / allOrdersData.length : 0;
-
-      const statusCounts: Record<OrderStatus, number> = {
-        pending: 0,
-        processing: 0,
-        shipped: 0,
-        delivered: 0,
-        cancelled: 0,
-      };
-
-      allOrdersData.forEach((order) => {
-        if (statusCounts[order.status] !== undefined) {
-          statusCounts[order.status]++;
-        }
-      });
-
-      const statusDistributionData = Object.entries(statusCounts).map(
-        ([status, count]) => ({
-          name: status.charAt(0).toUpperCase() + status.slice(1),
-          value: count,
-        })
-      );
 
       const last7Days: Date[] = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
@@ -269,9 +231,7 @@ const useDashboardStore = create<DashboardState>((set) => ({
           totalRevenue,
           averageOrderValue,
         },
-        recentOrders: recentOrdersData,
         salesData: salesByDate,
-        statusDistribution: statusDistributionData,
         topProducts: topSellingProducts,
         revenueByCategory: revenueByCategoryData,
         userGrowth: userGrowthData,
