@@ -2,7 +2,7 @@ import React from "react";
 
 import OrderDetails from "@/modules/app/Orders/components/OrderDetails";
 
-const page = () => {
+const OrderDetailPage = () => {
   return (
     <>
       <OrderDetails />
@@ -10,4 +10,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default OrderDetailPage;

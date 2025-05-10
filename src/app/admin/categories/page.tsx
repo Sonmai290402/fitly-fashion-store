@@ -2,7 +2,7 @@ import React from "react";
 
 import Categories from "@/modules/admin/Categories";
 
-const page = () => {
+const AdminCategoryPage = () => {
   return (
     <>
       <Categories />
@@ -10,4 +10,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default AdminCategoryPage;

@@ -2,7 +2,7 @@ import React from "react";
 
 import Collections from "@/modules/admin/Collections";
 
-const page = () => {
+const AdminCollectionsPage = () => {
   return (
     <>
       <Collections />
@@ -10,4 +10,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default AdminCollectionsPage;

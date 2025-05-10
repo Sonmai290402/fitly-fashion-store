@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
 import { useCartStore } from "@/store/cartStore";
 
-import CartSlidePanel from "../common/CartSlidePanel";
+import CartSlidePanel from "../CartSlidePanel";
 
 const EXCLUDED_PATHS = [
   "/checkout",

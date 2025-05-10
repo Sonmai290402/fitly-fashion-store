@@ -10,9 +10,9 @@ import { useHasHydrated } from "@/hooks/useHasHydrated";
 import { useAuthStore } from "@/store/authStore";
 import { useSearchStore } from "@/store/searchStore";
 
-import { ModeToggle } from "../common/ModeToggle";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Button } from "../ui/button";
+import { ModeToggle } from "../../common/ModeToggle";
+import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar";
+import { Button } from "../../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +20,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+} from "../../ui/dropdown-menu";
 import HeaderSearch from "./HeaderSearch";
 
 const HeaderActions = () => {

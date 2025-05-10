@@ -2,7 +2,7 @@ import React from "react";
 
 import CheckoutForm from "@/modules/app/Checkout/components/CheckoutForm";
 
-const page = () => {
+const CheckOutPage = () => {
   return (
     <>
       <CheckoutForm />
@@ -10,4 +10,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default CheckOutPage;

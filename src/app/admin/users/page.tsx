@@ -2,7 +2,7 @@ import React from "react";
 
 import Users from "@/modules/admin/Users";
 
-const page = () => {
+const AdminUserListPage = () => {
   return (
     <>
       <Users />
@@ -10,4 +10,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default AdminUserListPage;

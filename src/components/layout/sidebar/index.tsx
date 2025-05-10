@@ -5,7 +5,7 @@ import Link from "next/link";
 import { adminMenuItems } from "@/constants";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
 
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "../../ui/skeleton";
 import SidebarItem from "./SidebarItem";
 
 const Sidebar = () => {

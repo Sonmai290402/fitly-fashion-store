@@ -2,7 +2,7 @@ import React from "react";
 
 import Products from "@/modules/admin/Products";
 
-const page = () => {
+const AdminProductListPage = () => {
   return (
     <>
       <Products />
@@ -10,4 +10,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default AdminProductListPage;

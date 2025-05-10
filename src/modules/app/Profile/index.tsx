@@ -18,7 +18,7 @@ type TabOption = {
   component: React.ReactNode;
 };
 
-export default function ProfilePage() {
+const Profile = () => {
   const { user } = useAuthStore();
   const hasHydrated = useHasHydrated();
   const router = useRouter();
@@ -124,4 +124,6 @@ export default function ProfilePage() {
       </div>
     </div>
   );
-}
+};
+
+export default Profile;

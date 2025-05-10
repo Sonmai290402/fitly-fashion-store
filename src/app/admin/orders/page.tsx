@@ -2,7 +2,7 @@ import React from "react";
 
 import OrderManagement from "@/modules/admin/Orders";
 
-const page = () => {
+const AdminOrderListPage = () => {
   return (
     <>
       <OrderManagement />
@@ -10,4 +10,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default AdminOrderListPage;

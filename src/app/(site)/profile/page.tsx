@@ -1,13 +1,13 @@
 import React from "react";
 
-import ProfilePage from "@/modules/app/Profile";
+import Profile from "@/modules/app/Profile";
 
-const page = () => {
+const ProfilePage = () => {
   return (
     <>
-      <ProfilePage />
+      <Profile />
     </>
   );
 };
 
-export default page;
+export default ProfilePage;

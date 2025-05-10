@@ -2,7 +2,7 @@ import React from "react";
 
 import OrderConfirmation from "@/modules/app/Orders/components/Comfirmation";
 
-const page = () => {
+const OrderConfirmationPage = () => {
   return (
     <>
       <OrderConfirmation />
@@ -10,4 +10,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default OrderConfirmationPage;

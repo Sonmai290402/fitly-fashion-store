@@ -2,7 +2,7 @@ import React from "react";
 
 import OrderList from "@/modules/app/Orders/components/OrdersList";
 
-const page = () => {
+const OrderListPage = () => {
   return (
     <>
       <OrderList />
@@ -10,4 +10,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default OrderListPage;

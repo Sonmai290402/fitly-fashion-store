@@ -2,7 +2,7 @@ import React from "react";
 
 import AdminDashboard from "@/modules/admin/Dashboard";
 
-const index = () => {
+const AdminDashboardPage = () => {
   return (
     <>
       <AdminDashboard />
@@ -10,4 +10,4 @@ const index = () => {
   );
 };
 
-export default index;
+export default AdminDashboardPage;

@@ -1,11 +1,11 @@
 import React from "react";
 
-import SearchResultsPage from "@/modules/app/Search/components/SearchResults";
+import SearchResults from "@/modules/app/Search/components/SearchResults";
 
 const SearchPage = () => {
   return (
     <>
-      <SearchResultsPage />
+      <SearchResults />
     </>
   );
 };

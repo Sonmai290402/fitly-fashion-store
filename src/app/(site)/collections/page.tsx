@@ -2,7 +2,7 @@ import React from "react";
 
 import Collections from "@/modules/app/Collections";
 
-const page = () => {
+const CollectionListPage = () => {
   return (
     <>
       <Collections />
@@ -10,4 +10,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default CollectionListPage;

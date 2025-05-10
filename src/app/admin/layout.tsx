@@ -3,7 +3,7 @@
 import React from "react";
 
 import { ThemeProvider } from "@/components/common/theme-provider";
-import Sidebar from "@/components/sidebar";
+import Sidebar from "@/components/layout/sidebar";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
 import { useAuthListener } from "@/store/authStore";
 

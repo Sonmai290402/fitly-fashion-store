@@ -1,9 +1,9 @@
 "use client";
 
+import FloatingButtonsContainer from "@/components/common/FloatingButtons/FloatingButtonContainer";
 import { ThemeProvider } from "@/components/common/theme-provider";
-import FloatingButtonsContainer from "@/components/FloatingButtons/FloatingButtonContainer";
-import Footer from "@/components/footer";
-import Header from "@/components/header";
+import Footer from "@/components/layout/footer";
+import Header from "@/components/layout/header";
 import { useHasHydrated } from "@/hooks/useHasHydrated";
 import { useAuthListener } from "@/store/authStore";
 import { useCartUserSync } from "@/store/cartStore";

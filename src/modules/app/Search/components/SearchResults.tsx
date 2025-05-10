@@ -11,7 +11,7 @@ import useScrollView from "@/hooks/useScrollView";
 import { useSearchStore } from "@/store/searchStore";
 import { ProductData } from "@/types/product.types";
 
-export default function SearchPage() {
+const SearchResults = () => {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -157,4 +157,6 @@ export default function SearchPage() {
       )}
     </div>
   );
-}
+};
+
+export default SearchResults;

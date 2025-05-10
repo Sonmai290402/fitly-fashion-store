@@ -2,8 +2,8 @@ import React from "react";
 
 import ProductDetail from "@/modules/app/ProductDetail";
 
-const page = () => {
+const ProductDetailPage = () => {
   return <ProductDetail />;
 };
 
-export default page;
+export default ProductDetailPage;
