@@ -11,6 +11,7 @@ import { RemoveScroll } from "react-remove-scroll";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { formatCurrency } from "@/utils/formatCurrency";
 
@@ -27,6 +28,7 @@ export default function CartSlidePanel({
   onOpenChange,
 }: CartSlidePanelProps) {
   const router = useRouter();
+  const { user } = useAuthStore();
   const { items, removeItem, updateQuantity } = useCartStore();
   const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
   const [localQuantities, setLocalQuantities] = useState<
@@ -135,8 +137,13 @@ export default function CartSlidePanel({
 
   const handleCheckout = useCallback(() => {
     onOpenChange(false);
-    router.push("/checkout");
-  }, [onOpenChange, router]);
+    if (!user) {
+      toast.error("You need to login to checkout");
+      router.push("/login");
+    } else {
+      router.push("/checkout");
+    }
+  }, [onOpenChange, router, user]);
 
   const handleToggleSelectAll = useCallback(() => {
     if (isAllSelected) {
