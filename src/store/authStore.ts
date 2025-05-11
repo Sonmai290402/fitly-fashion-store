@@ -27,7 +27,12 @@ import { LoginCredentials, SignUpCredentials } from "@/types/auth.types";
 import { UserData } from "@/types/user.types";
 import { handleFirebaseError } from "@/utils/configFirebaseError";
 
-const USER_SPECIFIC_STORAGE_KEYS = Object.values(STORAGE_KEYS);
+// Define keys that are tied to a user's authentication - exclude guest cart
+const USER_SPECIFIC_STORAGE_KEYS = [
+  STORAGE_KEYS.AUTH_USER,
+  STORAGE_KEYS.REVIEW_VOTES,
+  STORAGE_KEYS.CART_ITEMS,
+];
 
 const AUTH_COOKIE = "auth_token";
 
@@ -45,13 +50,21 @@ const clearAllUserData = () => {
   try {
     deleteCookie(AUTH_COOKIE);
 
+    const guestCartData = localStorage.getItem(STORAGE_KEYS.CART_ITEMS_GUEST);
+
     USER_SPECIFIC_STORAGE_KEYS.forEach((key) => {
-      localStorage.removeItem(key);
+      if (key !== STORAGE_KEYS.CART_ITEMS_GUEST) {
+        localStorage.removeItem(key);
+      }
     });
+
+    if (guestCartData) {
+      localStorage.setItem(STORAGE_KEYS.CART_ITEMS_GUEST, guestCartData);
+    }
 
     window.dispatchEvent(new Event("storage"));
 
-    console.log("All user data cleared successfully");
+    console.log("User authentication data cleared successfully");
   } catch (e) {
     console.error("Error clearing user data:", e);
   }
@@ -189,11 +202,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  login: async ({ email, password }: LoginCredentials) => {
+  login: async ({ email, password }: LoginCredentials): Promise<boolean> => {
     set({ loading: true, error: null });
     let loggedInFirebaseUser: User | null = null;
 
     try {
+      const guestCartData = localStorage.getItem(STORAGE_KEYS.CART_ITEMS_GUEST);
+
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
@@ -205,7 +220,18 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (userData) {
         saveUserToStorage(userData);
+
+        if (guestCartData) {
+          localStorage.setItem(STORAGE_KEYS.CART_ITEMS_GUEST, guestCartData);
+        }
+
         set({ user: userData, loading: false, error: null });
+
+        window.dispatchEvent(
+          new CustomEvent("userLoggedIn", {
+            detail: { userId: userData.uid },
+          })
+        );
 
         toast.success("Login successfully!");
         return true;
@@ -228,7 +254,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ loading: false });
     }
   },
-
   logout: async () => {
     await signOut(auth);
 

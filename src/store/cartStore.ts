@@ -3,7 +3,6 @@ import { create } from "zustand";
 
 import { STORAGE_KEYS } from "@/constants";
 import {
-  deleteCartFromFirestore,
   loadCartFromFirestore,
   saveCartToFirestore,
 } from "@/services/cartService";
@@ -36,28 +35,16 @@ interface CartState {
   ) => Promise<string>;
   loadCart: (userId: string | null) => void;
   saveCart: (userId: string | null) => void;
-  syncCartAcrossDevices: (userId: string) => Promise<void>;
 }
 
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
   loading: true,
 
-  addItem: (newItem: CartItem) => {
+  addItem: (newItem) => {
     set((state) => {
-      let userId: string | null = null;
-      try {
-        const userData = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
-        if (userData) {
-          const user = JSON.parse(userData);
-          userId = user.uid;
-        }
-      } catch (e) {
-        console.error("Error getting user ID when adding item:", e);
-      }
-
       const existingItemIndex = state.items.findIndex(
-        (item: CartItem) =>
+        (item) =>
           item.id === newItem.id &&
           item.color === newItem.color &&
           item.size === newItem.size
@@ -69,18 +56,28 @@ export const useCartStore = create<CartState>((set, get) => ({
           ...updatedItems[existingItemIndex],
           quantity:
             updatedItems[existingItemIndex].quantity + (newItem.quantity || 1),
-
-          ...(userId && { userId }),
         };
       } else {
-        updatedItems.push({
-          ...newItem,
-          quantity: newItem.quantity || 1,
-          ...(userId && { userId }),
-        });
+        updatedItems.push({ ...newItem, quantity: newItem.quantity || 1 });
       }
 
       setTimeout(() => {
+        let userId: string | null = null;
+        try {
+          const userData = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+          if (userData) {
+            const user = JSON.parse(userData);
+            userId = user.uid;
+          }
+        } catch (e) {
+          console.error("Error getting user ID when saving cart:", e);
+        }
+
+        if (userId) {
+          saveCartToFirestore(userId, updatedItems).catch((error) =>
+            console.error("Error saving cart to Firestore:", error)
+          );
+        }
         const { saveCart } = get();
         saveCart(userId);
       }, 0);
@@ -91,12 +88,9 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   removeItem: (itemId) => {
     set((state) => {
-      const updatedItems = state.items.filter(
-        (item: CartItem) => item.id !== itemId
-      );
+      const updatedItems = state.items.filter((item) => item.id !== itemId);
 
       setTimeout(() => {
-        const { saveCart } = get();
         let userId: string | null = null;
         try {
           const userData = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
@@ -105,8 +99,15 @@ export const useCartStore = create<CartState>((set, get) => ({
             userId = user.uid;
           }
         } catch (e) {
-          console.error("Error getting user ID when removing item:", e);
+          console.error("Error getting user ID when saving cart:", e);
         }
+
+        if (userId) {
+          saveCartToFirestore(userId, updatedItems).catch((error) =>
+            console.error("Error saving cart to Firestore:", error)
+          );
+        }
+        const { saveCart } = get();
         saveCart(userId);
       }, 0);
 
@@ -118,29 +119,27 @@ export const useCartStore = create<CartState>((set, get) => ({
     if (quantity < 1) return;
 
     set((state) => {
-      let userId: string | null = null;
-      try {
-        const userData = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
-        if (userData) {
-          const user = JSON.parse(userData);
-          userId = user.uid;
-        }
-      } catch (e) {
-        console.error("Error getting user ID when updating quantity:", e);
-      }
-
-      const updatedItems = state.items.map((item: CartItem) =>
-        item.id === itemId
-          ? {
-              ...item,
-              quantity,
-
-              ...(userId && { userId }),
-            }
-          : item
+      const updatedItems = state.items.map((item) =>
+        item.id === itemId ? { ...item, quantity } : item
       );
 
       setTimeout(() => {
+        let userId: string | null = null;
+        try {
+          const userData = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+          if (userData) {
+            const user = JSON.parse(userData);
+            userId = user.uid;
+          }
+        } catch (e) {
+          console.error("Error getting user ID when saving cart:", e);
+        }
+
+        if (userId) {
+          saveCartToFirestore(userId, updatedItems).catch((error) =>
+            console.error("Error saving cart to Firestore:", error)
+          );
+        }
         const { saveCart } = get();
         saveCart(userId);
       }, 0);
@@ -152,39 +151,38 @@ export const useCartStore = create<CartState>((set, get) => ({
   clearCart: () => {
     set({ items: [] });
 
-    setTimeout(async () => {
-      const { saveCart } = get();
+    setTimeout(() => {
       let userId: string | null = null;
       try {
         const userData = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
         if (userData) {
           const user = JSON.parse(userData);
           userId = user.uid;
-
-          if (userId) {
-            await deleteCartFromFirestore(userId);
-          }
         }
       } catch (e) {
         console.error("Error getting user ID when clearing cart:", e);
       }
+
+      if (userId) {
+        saveCartToFirestore(userId, []).catch((error) =>
+          console.error("Error saving cart to Firestore:", error)
+        );
+      }
+      const { saveCart } = get();
       saveCart(userId);
     }, 0);
   },
 
   getItem: (itemId) => {
-    return get().items.find((item: CartItem) => item.id === itemId);
+    return get().items.find((item) => item.id === itemId);
   },
 
   getTotalItems: () => {
-    return get().items.reduce(
-      (total, item: CartItem) => total + item.quantity,
-      0
-    );
+    return get().items.reduce((total, item) => total + item.quantity, 0);
   },
 
   getTotalPrice: () => {
-    return get().items.reduce((total, item: CartItem) => {
+    return get().items.reduce((total, item) => {
       const price = item.sale_price || item.price;
       return total + price * item.quantity;
     }, 0);
@@ -217,180 +215,89 @@ export const useCartStore = create<CartState>((set, get) => ({
   loadCart: async (userId: string | null) => {
     set({ loading: true });
 
+    const userStorageKey = getUserCartKey(userId);
+    const guestStorageKey = STORAGE_KEYS.CART_ITEMS_GUEST;
+
     try {
-      let items: CartItem[] = [];
+      const guestCartData = localStorage.getItem(guestStorageKey);
+      const guestCart = guestCartData ? JSON.parse(guestCartData) : {};
+
+      const guestItems: CartItem[] = Array.isArray(guestCart.items)
+        ? guestCart.items
+        : [];
+
+      let mergedCart: CartItem[] = [];
 
       if (userId) {
-        try {
-          items = await loadCartFromFirestore(userId);
+        console.log("Loading user cart from Firestore for userId:", userId);
+        const firestoreCart = await loadCartFromFirestore(userId);
+        console.log("Firestore cart loaded:", firestoreCart);
+        console.log("Guest items to merge:", guestItems);
 
-          items = items.map((item: CartItem) => ({
-            ...item,
-            userId,
-          }));
+        const mergedItems = [...firestoreCart];
 
-          if (items.length === 0) {
-            const localCart = JSON.parse(
-              localStorage.getItem(getUserCartKey(userId)) || "{}"
-            );
-
-            if (Array.isArray(localCart.items) && localCart.items.length > 0) {
-              items = localCart.items.map((item: CartItem) => ({
-                ...item,
-                userId,
-              }));
-
-              saveCartToFirestore(userId, items).catch((err) =>
-                console.error(
-                  "Error syncing localStorage cart to Firestore:",
-                  err
-                )
-              );
-            }
-          }
-        } catch (error) {
-          console.error("Failed to load cart from Firestore:", error);
-
-          const localCart = JSON.parse(
-            localStorage.getItem(getUserCartKey(userId)) || "{}"
+        for (const guestItem of guestItems) {
+          const existingItemIndex = mergedItems.findIndex(
+            (item) =>
+              item.id === guestItem.id &&
+              item.color === guestItem.color &&
+              item.size === guestItem.size
           );
 
-          if (Array.isArray(localCart.items)) {
-            items = localCart.items.map((item: CartItem) => ({
-              ...item,
-              userId,
-            }));
+          if (existingItemIndex !== -1) {
+            mergedItems[existingItemIndex].quantity += guestItem.quantity;
+          } else {
+            mergedItems.push(guestItem);
           }
         }
 
-        const guestCart = JSON.parse(
-          localStorage.getItem(STORAGE_KEYS.CART_ITEMS_GUEST) || "{}"
-        );
+        mergedCart = mergedItems;
 
-        if (Array.isArray(guestCart.items) && guestCart.items.length > 0) {
-          for (const guestItem of guestCart.items) {
-            const index = items.findIndex(
-              (item: CartItem) =>
-                item.id === guestItem.id &&
-                item.color === guestItem.color &&
-                item.size === guestItem.size
-            );
+        localStorage.removeItem(guestStorageKey);
 
-            if (index !== -1) {
-              items[index].quantity += guestItem.quantity;
-              items[index].userId = userId;
-            } else {
-              items.push({
-                ...guestItem,
-                userId,
-              });
-            }
-          }
-
-          localStorage.removeItem(STORAGE_KEYS.CART_ITEMS_GUEST);
-
-          if (items.length > 0) {
-            saveCartToFirestore(userId, items).catch((err) =>
-              console.error("Error saving merged cart to Firestore:", err)
-            );
-          }
-        }
+        console.log("Saving merged cart to Firestore:", mergedCart);
+        await saveCartToFirestore(userId, mergedCart);
       } else {
-        const guestCart = JSON.parse(
-          localStorage.getItem(STORAGE_KEYS.CART_ITEMS_GUEST) || "{}"
-        );
-
-        if (Array.isArray(guestCart.items)) {
-          items = guestCart.items;
-
-          items = items.map(({ userId: _, ...item }: CartItem) => item);
-        }
+        mergedCart = guestItems;
       }
 
-      set({ items, loading: false });
+      localStorage.setItem(
+        userStorageKey,
+        JSON.stringify({ items: mergedCart })
+      );
 
-      const storageKey = getUserCartKey(userId);
-      localStorage.setItem(storageKey, JSON.stringify({ items }));
+      set({ items: mergedCart, loading: false });
+      console.log("Cart loaded and set to state:", mergedCart);
     } catch (error) {
       console.error("Failed to load cart:", error);
       set({ items: [], loading: false });
     }
   },
 
-  saveCart: async (userId: string | null) => {
+  saveCart: (userId: string | null) => {
     const { items } = get();
     const storageKey = getUserCartKey(userId);
 
     try {
       localStorage.setItem(storageKey, JSON.stringify({ items }));
-
-      if (userId && items.length > 0) {
-        await saveCartToFirestore(userId, items);
+      if (userId) {
+        saveCartToFirestore(userId, items).catch((error) =>
+          console.error("Error saving cart to Firestore:", error)
+        );
       }
     } catch (error) {
       console.error("Failed to save cart:", error);
-    }
-  },
-
-  syncCartAcrossDevices: async (userId: string) => {
-    if (!userId) return;
-
-    try {
-      set({ loading: true });
-
-      const firestoreItems = await loadCartFromFirestore(userId);
-
-      const firestoreItemsWithUserId = firestoreItems.map((item: CartItem) => ({
-        ...item,
-        userId,
-      }));
-
-      const localStorageKey = getUserCartKey(userId);
-      const localCart = JSON.parse(
-        localStorage.getItem(localStorageKey) || "{}"
-      );
-      const localItems = Array.isArray(localCart.items) ? localCart.items : [];
-
-      const localItemsWithUserId = localItems.map((item: CartItem) => ({
-        ...item,
-        userId,
-      }));
-
-      const mergedItems =
-        firestoreItemsWithUserId.length > 0
-          ? firestoreItemsWithUserId
-          : localItemsWithUserId;
-
-      if (
-        firestoreItemsWithUserId.length === 0 &&
-        localItemsWithUserId.length > 0
-      ) {
-        await saveCartToFirestore(userId, localItemsWithUserId);
-      }
-
-      set({ items: mergedItems, loading: false });
-      localStorage.setItem(
-        localStorageKey,
-        JSON.stringify({ items: mergedItems })
-      );
-    } catch (error) {
-      console.error("Failed to sync cart across devices:", error);
-      set({ loading: false });
     }
   },
 }));
 
 export const useCartUserSync = () => {
   const { user } = useAuthStore();
-  const { loadCart, syncCartAcrossDevices } = useCartStore();
+  const { loadCart } = useCartStore();
 
   useEffect(() => {
-    if (user?.uid) {
-      syncCartAcrossDevices(user.uid);
-    } else {
-      loadCart(null);
-    }
-  }, [user?.uid, loadCart, syncCartAcrossDevices]);
+    loadCart(user?.uid || null);
+  }, [user?.uid, loadCart]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -400,7 +307,7 @@ export const useCartUserSync = () => {
         try {
           if (e.newValue) {
             const userData = JSON.parse(e.newValue);
-            syncCartAcrossDevices(userData.uid);
+            loadCart(userData.uid);
           } else {
             loadCart(null);
           }
@@ -411,7 +318,22 @@ export const useCartUserSync = () => {
       }
     };
 
+    const handleUserLogin = (e: CustomEvent) => {
+      const userId = e.detail?.userId;
+      if (userId) {
+        loadCart(userId);
+      }
+    };
+
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [loadCart, syncCartAcrossDevices]);
+    window.addEventListener("userLoggedIn", handleUserLogin as EventListener);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener(
+        "userLoggedIn",
+        handleUserLogin as EventListener
+      );
+    };
+  }, [loadCart]);
 };
