@@ -138,7 +138,7 @@ export default function CartSlidePanel({
   const handleCheckout = useCallback(() => {
     onOpenChange(false);
     if (!user) {
-      toast.error("You need to login to checkout");
+      toast.error("You need login to checkout");
       router.push("/login");
     } else {
       router.push("/checkout");
