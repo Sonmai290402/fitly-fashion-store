@@ -52,13 +52,20 @@ export const useCartStore = create<CartState>((set, get) => ({
 
       const updatedItems = [...state.items];
       if (existingItemIndex !== -1) {
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity:
-            updatedItems[existingItemIndex].quantity + (newItem.quantity || 1),
-        };
+        const existingItem = updatedItems[existingItemIndex];
+        updatedItems.splice(existingItemIndex, 1);
+
+        updatedItems.unshift({
+          ...existingItem,
+          quantity: existingItem.quantity + (newItem.quantity || 1),
+          addedAt: new Date().toISOString(),
+        });
       } else {
-        updatedItems.push({ ...newItem, quantity: newItem.quantity || 1 });
+        updatedItems.unshift({
+          ...newItem,
+          quantity: newItem.quantity || 1,
+          addedAt: new Date().toISOString(),
+        });
       }
 
       setTimeout(() => {

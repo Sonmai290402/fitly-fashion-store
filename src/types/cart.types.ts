@@ -10,4 +10,5 @@ export interface CartItem {
   productId: string;
   variantId?: string;
   userId?: string;
+  addedAt?: string;
 }

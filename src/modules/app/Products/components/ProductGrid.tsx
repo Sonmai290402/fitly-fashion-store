@@ -241,8 +241,10 @@ const ProductGrid = ({ filters }: ProductGridProps) => {
 
   return (
     <div className="w-full flex-grow space-y-6">
-      {loading && !hasFetched ? (
-        <ProductSkeletonGrid />
+      {!loading && !hasFetched ? (
+        <div className="w-full flex-grow space-y-6 min-h-[600px]">
+          <ProductSkeletonGrid />
+        </div>
       ) : productsToDisplay.length === 0 ? (
         <NoProductFound />
       ) : (

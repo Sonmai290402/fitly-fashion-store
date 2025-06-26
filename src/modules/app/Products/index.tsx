@@ -27,8 +27,6 @@ const MobileFilters = React.memo(({ filters }: { filters: ProductFilters }) => {
 
 MobileFilters.displayName = "MobileFilters";
 
-const MemoizedProductGrid = React.memo(ProductGrid);
-
 const Products = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -82,7 +80,7 @@ const Products = () => {
   );
 
   return (
-    <div className="flex flex-col max-w-7xl px-5 py-5 sm:mx-10 md:mx-15 lg:mx-20 gap-y-5">
+    <div className="flex flex-col max-w-7xl px-5 py-5 mx-auto gap-y-5">
       <Breadcrumb filters={filters} />
 
       <div className="flex items-center justify-between">
@@ -117,7 +115,7 @@ const Products = () => {
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <MemoizedProductGrid filters={filters} />
+          <ProductGrid filters={filters} />
         </div>
       </div>
     </div>
